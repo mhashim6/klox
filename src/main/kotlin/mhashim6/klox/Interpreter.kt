@@ -99,8 +99,20 @@ fun isTruthy(obj: Any?): Boolean = when (obj) {
 
 fun isEqual(obj1: Any?, obj2: Any?) = if (obj1 == null) obj2 == null else obj1 == obj2
 
-fun plus(op1: Any?, op2: Any?, operator: Token): Any = when {
-    op1 is Double && op2 is Double -> op1 + op2
-    op1 is String && op2 is String -> op1 + op2
-    else -> throw  RuntimeError(operator, "Operands must be two numbers or two strings.");
+fun plus(op1: Any?, op2: Any?, operator: Token): Any = when (op1) {
+    is Double -> {
+        when (op2) {
+            is Double -> op1 + op2
+            is String -> op1.toString() + op2
+            else -> throw  RuntimeError(operator, "Operands must be numbers or strings.")
+        }
+    }
+    is String ->
+        when (op2) {
+            is String -> op1 + op2
+            is Double -> op1 + op2
+            else -> throw  RuntimeError(operator, "Operands must be numbers or strings.")
+        }
+
+    else -> throw  RuntimeError(operator, "Operands must be numbers or strings.")
 }

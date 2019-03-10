@@ -8,6 +8,6 @@ class LoxTest {
 
     @Test
     fun run() {
-        Lox.runSource("5 +6 -7 *2 / 5")
+        Lox.runSource("5/0")
     }
 }
