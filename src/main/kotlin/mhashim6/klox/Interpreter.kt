@@ -36,6 +36,7 @@ fun evaluate(expr: Expr?): Any? = when (expr) {
             }
             TokenType.SLASH -> {
                 checkNumberOperands(expr.operator, left, right)
+                if (right == 0.0) throw RuntimeError(expr.operator, "division by zero")
                 arithmetic(left, right, Double::div)
             }
             TokenType.STAR -> {
