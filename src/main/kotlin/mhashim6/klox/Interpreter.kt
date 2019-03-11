@@ -6,10 +6,17 @@ import kotlin.math.floor
  *@author mhashim6 on 09/03/19
  */
 
-fun interpret(expr: Expr?) {
+private val environment = Environment()
+
+fun interpret(statements: List<Stmt?>) {
     try {
-        val result = evaluate(expr)
-        println(stringify(result))
+        statements.forEach {
+            when (it) {
+                is Stmt.Var -> environment.define(it.name.lexeme, evaluate(it.initializer))
+                is Stmt.Expression -> evaluate(it.expression)
+                is Stmt.Print -> println(stringify(evaluate(it.expression)))
+            }
+        }
     } catch (error: RuntimeError) {
         Lox.runtimeError(error)
     }
@@ -80,6 +87,7 @@ fun evaluate(expr: Expr?): Any? = when (expr) {
             else -> null  //TODO
         }
     }
+    is Expr.Variable -> environment.get(expr.name)
     else -> null
 }
 

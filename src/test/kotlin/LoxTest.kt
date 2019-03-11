@@ -8,6 +8,8 @@ class LoxTest {
 
     @Test
     fun run() {
-        Lox.runSource("5/0")
+        Lox.runSource("var a = 1;\n" +
+                "var b = 2;\n" +
+                "print a + b;")
     }
 }

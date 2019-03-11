@@ -59,11 +59,11 @@ object Lox {
         val tokens = scanner.scanTokens()
         tokens.forEach(::println)
         val parser = Parser(tokens)
-        val expression = parser.parse()
-        interpret(expression)
+        val statements = parser.parse()
+        interpret(statements)
         // Stop if there was a syntax error.
         if (hadError) return
-        expression?.let { println(PrettyAST.prettify(it)) }
+//        statements?.let { println(PrettyAST.prettify(it)) }
     }
 
     internal fun error(line: Int, message: String) {

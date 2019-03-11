@@ -16,10 +16,17 @@ object GenerateAST {
         }
         val outputDir = args[0]
         defineAst(outputDir, "Expr", Arrays.asList(
-                "Binary   > left: Expr , operator: Token , right: Expr ",
-                "Grouping > expression: Expr ",
+                "Binary   > left: Expr, operator: Token , right: Expr ",
+                "Grouping > expression: Expr",
                 "Literal  > value: Any?",
-                "Unary    > operator: Token , right: Expr "
+                "Unary    > operator: Token, right: Expr",
+                "Variable > name: Token"
+        ))
+
+        defineAst(outputDir, "Stmt", listOf(
+                "Expression > expression: Expr",
+                "Print > expression: Expr",
+                "Var > name: Token, initializer: Expr?"
         ))
     }
 
@@ -28,9 +35,9 @@ object GenerateAST {
         val path = "$outputDir/$baseName.kt"
         val writer = PrintWriter(path, "UTF-8")
 
-        writer.println("package mhashim6.klox.kompiler")
+        writer.println("package mhashim6.klox")
         writer.println()
-        writer.println("import java.util.List")
+//        writer.println("import java.util.List")
         writer.println()
         writer.println("sealed class $baseName {")
 
@@ -47,7 +54,7 @@ object GenerateAST {
 
     private fun defineType(writer: PrintWriter, baseName: String, className: String, fields: List<String>) {
         writer.println("    class " + className
-                + "(${fields.reduce { acc, field -> "$acc, val $field" }})"
+                + "(${fields.map { "val $it" }.reduce { acc, field -> "$acc, $field" }})"
                 + " : " + baseName + " ()")
     }
 }

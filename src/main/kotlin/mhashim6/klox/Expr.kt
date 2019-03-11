@@ -5,4 +5,5 @@ sealed class Expr {
     class Grouping(val expression: Expr) : Expr()
     class Literal(val value: Any?) : Expr()
     class Unary(val operator: Token, val right: Expr) : Expr()
+    class Variable(val name: Token) : Expr()
 }
