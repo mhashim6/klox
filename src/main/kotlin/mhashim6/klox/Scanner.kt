@@ -166,7 +166,7 @@ internal class Scanner(private val source: String) {
                 "if" to IF,
                 "nil" to NIL,
                 "or" to OR,
-                "prettify" to PRINT,
+                "print" to PRINT,
                 "return" to RETURN,
                 "super" to SUPER,
                 "this" to THIS,
