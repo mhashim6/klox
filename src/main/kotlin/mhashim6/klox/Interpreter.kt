@@ -89,7 +89,7 @@ class Interpreter(private val environment: Environment = Environment()) {
         }
         is Expr.Variable -> environment.get(expr.name)
         is Expr.Assign -> {
-            if (environment.exists(expr.name))
+            if (environment.contains(expr.name))
                 environment.define(expr.name.lexeme, evaluate(expr.value))
             else throw  RuntimeError(expr.name, "Undefined variable ${expr.name.lexeme}.")
         }

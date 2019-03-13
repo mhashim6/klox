@@ -11,11 +11,11 @@ class Environment(private val enclosing: Environment? = null) {
     }
 
     fun get(name: Token): Any? = when {
-        exists(name) -> values[name.lexeme]
+        contains(name) -> values[name.lexeme]
         enclosing != null -> enclosing.get(name)
         else -> throw RuntimeError(name, "Undefined variable: ${name.lexeme}.")
     }
 
-    fun exists(name: Token) = values.keys.contains(name.lexeme)
+    fun contains(name: Token) = values.keys.contains(name.lexeme)
 
 }
