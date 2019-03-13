@@ -23,7 +23,8 @@ object PrettyAST {
         is Expr.Grouping -> parenthesize("group", expr.expression)
         is Expr.Literal -> if (expr.value == null) "nil" else expr.value.toString()
         is Expr.Unary -> parenthesize(expr.operator.lexeme, expr.right)
-        is Expr.Variable -> parenthesize(expr.name.lexeme, expr)
+        is Expr.Variable -> parenthesize(expr.name.lexeme)
+        is Expr.Assign -> parenthesize(expr.name.lexeme)
     }
 
     private fun parenthesize(name: String, vararg exprs: Expr): String {

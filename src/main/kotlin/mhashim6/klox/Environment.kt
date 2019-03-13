@@ -16,4 +16,6 @@ class Environment {
         else throw RuntimeError(name, "Undefined variable: ${name.lexeme}.")
     }
 
+    fun exists(name: Token) = values.keys.contains(name.lexeme)
+
 }

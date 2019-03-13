@@ -62,7 +62,25 @@ internal class Parser(private val tokens: List<Token>) {
     }
 
     private fun expression(): Expr {
-        return equality()
+        return assignment()
+    }
+
+    private fun assignment(): Expr {
+        val variable = equality()
+        return when {
+            match(EQUAL) -> {
+                val equals = previous
+                val value = assignment()
+                when (variable) {
+                    is Expr.Variable -> {
+                        val name = variable.name
+                        Expr.Assign(name, value)
+                    }
+                    else -> throw error(equals, "Invalid assignment target.")
+                }
+            }
+            else -> variable
+        }
     }
 
     private fun equality() = binary(::comparison, BANG_EQUAL, EQUAL_EQUAL)
