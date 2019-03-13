@@ -50,20 +50,15 @@ object Lox {
         }
     }
 
-    fun runSource(source: String) {
-        run(source)
-    }
-
-    private fun run(source: String) {
+    fun run(source: String) {
         val scanner = Scanner(source)
         val tokens = scanner.scanTokens()
-        tokens.forEach(::println)
+//        tokens.forEach(::println)
         val parser = Parser(tokens)
         val statements = parser.parse()
-        interpret(statements)
         // Stop if there was a syntax error.
         if (hadError) return
-//        statements?.let { println(PrettyAST.prettify(it)) }
+        Interpreter().interpret(statements)
     }
 
     internal fun error(line: Int, message: String) {

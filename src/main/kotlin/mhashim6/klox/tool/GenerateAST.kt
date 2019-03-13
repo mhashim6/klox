@@ -11,23 +11,25 @@ object GenerateAST {
     @JvmStatic
     fun main(args: Array<String>) {
         if (args.size != 1) {
-            System.err.println("Usage: generate_ast <output directory>")
+            System.err.println("Usage: generate_ast <output directory~")
             System.exit(1)
         }
         val outputDir = args[0]
         defineAst(outputDir, "Expr", Arrays.asList(
-                "Binary   > left: Expr, operator: Token , right: Expr ",
-                "Grouping > expression: Expr",
-                "Literal  > value: Any?",
-                "Unary    > operator: Token, right: Expr",
-                "Variable > name: Token",
-                "Assign   > name: Token, value:Expr"
+                "Binary   ~ left: Expr, operator: Token , right: Expr ",
+                "Grouping ~ expression: Expr",
+                "Literal  ~ value: Any?",
+                "Unary    ~ operator: Token, right: Expr",
+                "Variable ~ name: Token",
+                "Assign   ~ name: Token, value:Expr"
         ))
 
         defineAst(outputDir, "Stmt", listOf(
-                "Expression > expression: Expr",
-                "Print > expression: Expr",
-                "Var > name: Token, initializer: Expr?"
+                "Expression ~ expression: Expr",
+                "Print ~ expression: Expr",
+                "Var ~ name: Token, initializer: Expr?",
+                "Block ~ statements: List<Stmt>",
+                "Empty ~ "
         ))
     }
 
@@ -44,8 +46,8 @@ object GenerateAST {
 
         // The AST classes.
         for (type in types) {
-            val className = type.split(">")[0].trim()
-            val fields = type.split(">")[1].trim().split(",")
+            val className = type.split("~")[0].trim()
+            val fields = type.split("~")[1].trim().split(",")
             defineType(writer, baseName, className, fields)
         }
 

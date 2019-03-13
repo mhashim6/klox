@@ -15,8 +15,8 @@ internal class Parser(private val tokens: List<Token>) {
         get() = tokens[current - 1]
 
 
-    fun parse(): List<Stmt?> {
-        val statements = mutableListOf<Stmt?>()
+    fun parse(): List<Stmt> {
+        val statements = mutableListOf<Stmt>()
         while (!isEOF)
             statements.add(declaration())
 
@@ -24,12 +24,12 @@ internal class Parser(private val tokens: List<Token>) {
 
     }
 
-    private fun declaration(): Stmt? {
+    private fun declaration(): Stmt {
         return try {
             if (match(VAR)) varDeclaration() else statement()
         } catch (error: ParseError) {
             synchronize()
-            null
+            Stmt.Empty
         }
     }
 
@@ -41,14 +41,25 @@ internal class Parser(private val tokens: List<Token>) {
         return Stmt.Var(name, initializer)
     }
 
-    private fun statement(): Stmt {
-        return if (match(PRINT)) printStatement() else expressionStatement()
+    private fun statement(): Stmt = when {
+        match(PRINT) -> printStatement()
+        match(LEFT_BRACE) -> block()
+        else -> expressionStatement()
     }
 
     private fun printStatement(): Stmt {
         val value = expression()
         expectSemicolon()
         return Stmt.Print(value)
+    }
+
+    private fun block(): Stmt {
+        val statements = mutableListOf<Stmt>()
+        while (!check(RIGHT_BRACE) && !isEOF)
+            statements.add(declaration())
+
+        consume(RIGHT_BRACE, "Expect '}' after block.")
+        return Stmt.Block(statements)
     }
 
     private fun expressionStatement(): Stmt {
