@@ -1,5 +1,6 @@
 package mhashim6.klox
 
+import java.util.*
 import kotlin.math.floor
 
 /**
@@ -15,6 +16,12 @@ class Interpreter(private val environment: Environment = Environment()) {
                     is Stmt.Expression -> evaluate(it.expression)
                     is Stmt.Print -> println(stringify(evaluate(it.expression)))
                     is Stmt.Block -> Interpreter(Environment(environment)).interpret(it.statements)
+                    is Stmt.IfStmt -> {
+                        interpret(Collections.singletonList<Stmt>(
+                                if (isTruthy(it.condition)) it.thenBranch
+                                else it.elseBranch
+                        ))
+                    }
                 }
             }
         } catch (error: RuntimeError) {
@@ -71,6 +78,14 @@ class Interpreter(private val environment: Environment = Environment()) {
                     checkNumberOperands(expr.operator, left, right)
                     (left as Double) <= (right as Double)
                 }
+                TokenType.OR -> {
+                    val leftCondition = evaluate(expr.left)
+                    if (isTruthy(leftCondition)) leftCondition else evaluate(expr.right)
+                }
+                TokenType.AND -> {
+                    val leftCondition = evaluate(expr.left)
+                    if (isTruthy(leftCondition)) evaluate(expr.right) else leftCondition
+                }
                 else -> null  //TODO
             }
         }
@@ -108,7 +123,7 @@ class Interpreter(private val environment: Environment = Environment()) {
     private fun isTruthy(obj: Any?): Boolean = when (obj) {
         null -> false
         is Boolean -> obj
-        else -> false
+        else -> true
     }
 
     private fun isEqual(obj1: Any?, obj2: Any?) = if (obj1 == null) obj2 == null else obj1 == obj2

@@ -29,6 +29,7 @@ object GenerateAST {
                 "Print ~ expression: Expr",
                 "Var ~ name: Token, initializer: Expr?",
                 "Block ~ statements: List<Stmt>",
+                "IfStmt ~ condition:Expr, thenBranch: Stmt, elseBranch: Stmt?",
                 "Empty ~ "
         ))
     }

@@ -44,6 +44,7 @@ internal class Parser(private val tokens: List<Token>) {
     private fun statement(): Stmt = when {
         match(PRINT) -> printStatement()
         match(LEFT_BRACE) -> block()
+        match(IF) -> ifStmt()
         else -> expressionStatement()
     }
 
@@ -62,6 +63,18 @@ internal class Parser(private val tokens: List<Token>) {
         return Stmt.Block(statements)
     }
 
+    private fun ifStmt(): Stmt {
+        consume(LEFT_PAREN, "Expect '(' after 'if'.")
+        val condition = expression()
+        consume(RIGHT_PAREN, "Expect ')' after if condition.")
+
+        val thenBranch = statement()
+        var elseBranch: Stmt? = null
+        if (match(ELSE)) elseBranch = statement()
+
+        return Stmt.IfStmt(condition, thenBranch, elseBranch)
+    }
+
     private fun expressionStatement(): Stmt {
         val expr = expression()
         expectSemicolon()
@@ -77,7 +90,7 @@ internal class Parser(private val tokens: List<Token>) {
     }
 
     private fun assignment(): Expr {
-        val variable = equality()
+        val variable = or()
         return when {
             match(EQUAL) -> {
                 val equals = previous
@@ -94,6 +107,8 @@ internal class Parser(private val tokens: List<Token>) {
         }
     }
 
+    private fun or() = binary(::and, OR)
+    private fun and() = binary(::equality, AND)
     private fun equality() = binary(::comparison, BANG_EQUAL, EQUAL_EQUAL)
     private fun comparison() = binary(::addition, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)
     private fun addition() = binary(::multiplication, MINUS, PLUS)
