@@ -3,6 +3,7 @@ package mhashim6.klox
 import mhashim6.klox.ParserContext.current
 import mhashim6.klox.ParserContext.tokens
 import mhashim6.klox.TokenType.*
+import mhashim6.klox.LoxError.SyntaxError
 
 /**
  *@author mhashim6 on 08/03/19
@@ -12,6 +13,11 @@ import mhashim6.klox.TokenType.*
 private object ParserContext {
     var tokens: List<Token> = emptyList()
     var current = 0
+
+    fun reset(tokens: List<Token>) {
+        this.tokens = tokens
+        current = 0
+    }
 }
 
 private val isEOF: Boolean
@@ -22,7 +28,7 @@ private val previous: Token
 
 
 fun parse(tokens: List<Token>): List<Stmt> {
-    ParserContext.tokens = tokens
+    ParserContext.reset(tokens)
     val statements = mutableListOf<Stmt>()
     while (!isEOF)
         statements.add(declaration())
@@ -34,7 +40,8 @@ fun parse(tokens: List<Token>): List<Stmt> {
 private fun declaration(): Stmt {
     return try {
         if (match(VAR)) varDeclaration() else statement()
-    } catch (error: ParseError) {
+    } catch (error: SyntaxError) {
+        ErrorLogs.log(error)
         synchronize()
         Stmt.Empty
     }
@@ -107,7 +114,7 @@ private fun assignment(): Expr {
                     val name = variable.name
                     Expr.Assign(name, value)
                 }
-                else -> throw error(equals, "Invalid assignment target.")
+                else -> throw SyntaxError(equals, "Invalid assignment target.")
             }
         }
         else -> variable
@@ -153,7 +160,7 @@ private fun primary(): Expr = when {
         consume(RIGHT_PAREN, "Expect ')' after expression.")
         Expr.Grouping(expr)
     }
-    else -> throw error(peek(), "Expect expression.")
+    else -> throw SyntaxError(peek(), "Expect expression.")
 }
 
 
@@ -165,12 +172,7 @@ private fun match(vararg types: TokenType): Boolean {
 }
 
 private fun consume(type: TokenType, errorMessage: String): Token {
-    return if (check(type)) advance() else throw error(peek(), errorMessage)
-}
-
-private fun error(token: Token, message: String): ParseError {
-    Lox.error(token, message)
-    return ParseError()
+    return if (check(type)) advance() else throw SyntaxError(peek(), errorMessage)
 }
 
 private fun synchronize() {
@@ -196,5 +198,3 @@ private fun advance(): Token {
 }
 
 private fun peek() = tokens[current]
-
-private class ParseError : RuntimeException()

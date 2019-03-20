@@ -1,7 +1,6 @@
 package mhashim6.klox
 
 import java.io.BufferedReader
-import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.Charset
 import java.nio.file.Files
@@ -11,7 +10,6 @@ import java.nio.file.Paths
  * @author mhashim6 on 07/03/19
  */
 object Lox {
-    private var hadError = false
     private var hadRuntimeError: Boolean = false
 
     @JvmStatic
@@ -29,7 +27,7 @@ object Lox {
     private fun runFile(path: String) {
         val bytes = Files.readAllBytes(Paths.get(path))
         run(String(bytes, Charset.defaultCharset()))
-        if (hadError)
+        if (ErrorLogs.hasSyntaxErrors)
             System.exit(65)
         if (hadRuntimeError)
             System.exit(70)
@@ -43,24 +41,39 @@ object Lox {
         while (true) {
             print("> ")
             run(reader.readLine())
-            hadError = false
         }
     }
 
+    val environment = Environment()
     fun run(source: String) {
-        val tokens = scanTokens(source)
-//        tokens.forEach(::println)
-        val statements = parse(tokens)
-        // Stop if there was a syntax error.
-        if (hadError) return
-        interpret(statements)
+        try {
+            val tokens = scanTokens(source)
+            val statements = parse(tokens)
+            if (ErrorLogs.hasSyntaxErrors) {
+                ErrorLogs.errors.forEach(::error)
+                ErrorLogs.clear()
+                return
+            }
+
+            interpret(statements, environment)
+        } catch (err: LoxError.RuntimeError) {
+            error(err)
+        }
     }
 
-    internal fun error(line: Int, message: String) {
+    private fun error(err: LoxError) {
+        when (err) {
+            is LoxError.ScannerError -> scannerError(err.line, err.message)
+            is LoxError.SyntaxError -> syntaxError(err.source, err.message)
+            is LoxError.RuntimeError -> runtimeError(err)
+        }
+    }
+
+    private fun scannerError(line: Int, message: String) {
         report(line, "", message)
     }
 
-    internal fun error(token: Token, message: String) {
+    private fun syntaxError(token: Token, message: String) {
         if (token.type === TokenType.EOF) {
             report(token.line, " at end", message)
         } else {
@@ -68,14 +81,13 @@ object Lox {
         }
     }
 
-    fun runtimeError(error: RuntimeError) {
-        System.err.println("${error.message}[line ${error.token.line}]")
+    private fun runtimeError(error: LoxError.RuntimeError) {
+        System.err.println("${error.message} @ [line: ${error.line}]")
         hadRuntimeError = true
     }
 
     private fun report(line: Int, where: String, message: String) {
         System.err.println(
                 "[line $line] Error $where: $message")
-        hadError = true
     }
 }

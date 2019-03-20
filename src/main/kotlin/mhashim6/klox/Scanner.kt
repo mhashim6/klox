@@ -7,6 +7,7 @@ import mhashim6.klox.ScannerContext.source
 import mhashim6.klox.ScannerContext.tokens
 import java.util.ArrayList
 import mhashim6.klox.TokenType.*
+import mhashim6.klox.LoxError.ScannerError
 import java.lang.Character.MIN_VALUE as nullChar
 
 
@@ -17,17 +18,25 @@ import java.lang.Character.MIN_VALUE as nullChar
 private object ScannerContext {
     var source: String = ""
 
-    val tokens = ArrayList<Token>()
+    var tokens = ArrayList<Token>()
     var lexemeStart = 0
     var current = 0
     var line = 1
+
+    fun reset(source: String) {
+        this.source = source
+        tokens.clear()
+        lexemeStart = 0
+        current = 0
+        line = 1
+    }
 }
 
 private val isEOF: Boolean
     get() = current >= source.length
 
 fun scanTokens(source: String): List<Token> {
-    ScannerContext.source = source
+    ScannerContext.reset(source)
 
     while (!isEOF) {
         // We are at the beginning of the next lexeme.
@@ -69,7 +78,7 @@ private fun scanToken() {
         else -> when {
             c.isDigit() -> number()
             c.isAlpha() -> identifier()
-            else -> Lox.error(line, "Unexpected character.")
+            else -> ErrorLogs.log(ScannerError(line, "Unexpected character."))
         }
     }
 }
@@ -83,7 +92,7 @@ private fun string() {
 
     // Unterminated string.
     if (isEOF) {
-        Lox.error(line, "Unterminated string.")
+        ErrorLogs.log(ScannerError(line, "Unterminated string."))
         return
     }
 

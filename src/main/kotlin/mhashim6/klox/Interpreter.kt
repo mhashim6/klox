@@ -1,29 +1,26 @@
 package mhashim6.klox
 
 import kotlin.math.floor
+import mhashim6.klox.LoxError.RuntimeError
 
 /**
  *@author mhashim6 on 09/03/19
  */
 
-fun interpret(statements: List<Stmt>, environment: Environment = Environment()) {
-    try {
-        statements.forEach {
-            when (it) {
-                is Stmt.Var -> environment.define(it.name.lexeme, evaluate(it.initializer, environment))
-                is Stmt.Expression -> evaluate(it.expression, environment)
-                is Stmt.Print -> println(stringify(evaluate(it.expression, environment)))
-                is Stmt.Block -> interpret(it.statements, Environment(enclosing = environment))
-                is Stmt.IfStmt -> {
-                    interpret(listOf(
-                            if (evaluate(it.condition, environment).isTruthy()) it.thenBranch
-                            else it.elseBranch
-                    ))
-                }
+fun interpret(statements: List<Stmt>, environment: Environment) {
+    statements.forEach {
+        when (it) {
+            is Stmt.Var -> environment.define(it.name.lexeme, evaluate(it.initializer, environment))
+            is Stmt.Expression -> evaluate(it.expression, environment)
+            is Stmt.Print -> println(stringify(evaluate(it.expression, environment)))
+            is Stmt.Block -> interpret(it.statements, Environment(enclosing = environment))
+            is Stmt.IfStmt -> {
+                interpret(listOf(
+                        if (evaluate(it.condition, environment).isTruthy()) it.thenBranch
+                        else it.elseBranch
+                ), Environment(enclosing = environment))
             }
         }
-    } catch (error: RuntimeError) {
-        Lox.runtimeError(error)
     }
 }
 
@@ -48,7 +45,7 @@ private fun evaluate(expr: Expr?, environment: Environment): Any? = when (expr) 
             }
             TokenType.SLASH -> {
                 checkNumberOperands(expr.operator, left, right)
-                if (right == 0.0) throw RuntimeError(expr.operator, "division by zero")
+                if (right == 0.0) throw RuntimeError(expr.operator.line, "division by zero")
                 arithmetic(left, right, Double::div)
             }
             TokenType.STAR -> {
@@ -104,13 +101,13 @@ private fun evaluate(expr: Expr?, environment: Environment): Any? = when (expr) 
         try {
             environment.get(expr.name.lexeme)
         } catch (e: EnvironmentError) {
-            throw RuntimeError(expr.name, e.message)
+            throw RuntimeError(expr.name.line, e.message)
         }
     }
     is Expr.Assign -> {
         if (environment.contains(expr.name.lexeme))
             environment.define(expr.name.lexeme, evaluate(expr.value, environment))
-        else throw  RuntimeError(expr.name, "Undefined variable [${expr.name.lexeme}].")
+        else throw  RuntimeError(expr.name.line, "Undefined variable [${expr.name.lexeme}].")
     }
     else -> null
 }
@@ -121,7 +118,7 @@ private inline fun arithmetic(op1: Any?, op2: Any?, operation: (Double, Double) 
 
 private fun checkNumberOperands(operator: Token, vararg operands: Any?) {
     operands.filterNot { it is Double }.ifEmpty { return }
-    throw RuntimeError(operator, "Operand must be a number.")
+    throw RuntimeError(operator.line, "Operand must be a number.")
 }
 
 private fun Any?.isTruthy(): Boolean = when (this) {
@@ -137,15 +134,15 @@ private fun plus(op1: Any?, op2: Any?, operator: Token): Any = when (op1) {
         when (op2) {
             is Double -> op1 + op2
             is String -> op1.toString() + op2
-            else -> throw  RuntimeError(operator, "Operands must be numbers or strings.")
+            else -> throw  RuntimeError(operator.line, "Operands must be numbers or strings.")
         }
     }
     is String ->
         when (op2) {
             is String -> op1 + op2
             is Double -> op1 + op2
-            else -> throw  RuntimeError(operator, "Operands must be numbers or strings.")
+            else -> throw  RuntimeError(operator.line, "Operands must be numbers or strings.")
         }
 
-    else -> throw  RuntimeError(operator, "Operands must be numbers or strings.")
+    else -> throw  RuntimeError(operator.line, "Operands must be numbers or strings.")
 }
