@@ -14,7 +14,6 @@ object Lox {
     private var hadError = false
     private var hadRuntimeError: Boolean = false
 
-    @Throws(IOException::class)
     @JvmStatic
     fun main(args: Array<String>) {
         when {
@@ -27,7 +26,6 @@ object Lox {
         }
     }
 
-    @Throws(IOException::class)
     private fun runFile(path: String) {
         val bytes = Files.readAllBytes(Paths.get(path))
         run(String(bytes, Charset.defaultCharset()))
@@ -37,7 +35,6 @@ object Lox {
             System.exit(70)
     }
 
-    @Throws(IOException::class)
     private fun runPrompt() {
         val input = InputStreamReader(System.`in`)
         val reader = BufferedReader(input)
