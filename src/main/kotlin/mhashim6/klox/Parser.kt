@@ -69,7 +69,7 @@ internal class Parser(private val tokens: List<Token>) {
         consume(RIGHT_PAREN, "Expect ')' after if condition.")
 
         val thenBranch = statement()
-        var elseBranch: Stmt? = null
+        var elseBranch: Stmt = Stmt.Empty
         if (match(ELSE)) elseBranch = statement()
 
         return Stmt.IfStmt(condition, thenBranch, elseBranch)

@@ -1,6 +1,5 @@
 package mhashim6.klox
 
-import java.util.*
 import kotlin.math.floor
 
 /**
@@ -17,8 +16,8 @@ class Interpreter(private val environment: Environment = Environment()) {
                     is Stmt.Print -> println(stringify(evaluate(it.expression)))
                     is Stmt.Block -> Interpreter(Environment(environment)).interpret(it.statements)
                     is Stmt.IfStmt -> {
-                        interpret(Collections.singletonList<Stmt>(
-                                if (isTruthy(it.condition)) it.thenBranch
+                        interpret(listOf(
+                                if (isTruthy(evaluate(it.condition))) it.thenBranch
                                 else it.elseBranch
                         ))
                     }
