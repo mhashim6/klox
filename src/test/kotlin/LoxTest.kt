@@ -8,6 +8,6 @@ class LoxTest {
 
     @Test
     fun run() {
-        Lox.run("if(5 != 5){print \"hi\";} ")
+        Lox.run("if(5 == 5){print \"hi\";} else{print \"dude, you've got issues.\";}")
     }
 }

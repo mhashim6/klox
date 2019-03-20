@@ -10,12 +10,14 @@ class Environment(private val enclosing: Environment? = null) {
         values[name] = value
     }
 
-    fun get(name: Token): Any? = when {
-        contains(name) -> values[name.lexeme]
+    fun get(name: String): Any? = when {
+        contains(name) -> values[name]
         enclosing != null -> enclosing.get(name)
-        else -> throw RuntimeError(name, "Undefined variable: ${name.lexeme}.")
+        else -> throw EnvironmentError("Undefined variable: [$name].")
     }
 
-    fun contains(name: Token) = values.keys.contains(name.lexeme)
+    fun contains(name: String) = values.keys.contains(name)
 
 }
+
+class EnvironmentError(override val message: String) : RuntimeException()
