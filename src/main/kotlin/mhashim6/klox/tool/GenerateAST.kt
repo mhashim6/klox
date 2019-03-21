@@ -21,13 +21,14 @@ object GenerateAST {
                 "Literal  ~ value: Any?",
                 "Unary    ~ operator: Token, right: Expr",
                 "Variable ~ name: Token",
-                "Assign   ~ name: Token, value:Expr"
+                "Assign   ~ name: Token, value:Expr",
+                "Empty ~ "
         ))
 
         defineAst(outputDir, "Stmt", listOf(
                 "Expression ~ expression: Expr",
                 "Print ~ expression: Expr",
-                "Var ~ name: Token, initializer: Expr?",
+                "Var ~ name: Token, initializer: Expr",
                 "Block ~ statements: List<Stmt>",
                 "IfStmt ~ condition:Expr, thenBranch: Stmt, elseBranch: Stmt",
                 "WhileStmt ~ condition:Expr, body: Stmt",

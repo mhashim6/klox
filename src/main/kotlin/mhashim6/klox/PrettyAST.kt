@@ -25,6 +25,7 @@ object PrettyAST {
         is Expr.Unary -> parenthesize(expr.operator.lexeme, expr.right)
         is Expr.Variable -> parenthesize(expr.name.lexeme)
         is Expr.Assign -> parenthesize(expr.name.lexeme)
+        Expr.Empty -> ""
     }
 
     private fun parenthesize(name: String, vararg exprs: Expr): String {

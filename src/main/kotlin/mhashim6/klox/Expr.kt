@@ -8,4 +8,5 @@ sealed class Expr {
     class Unary(val operator: Token, val right: Expr) : Expr()
     class Variable(val name: Token) : Expr()
     class Assign(val name: Token, val value: Expr) : Expr()
+    object Empty : Expr()
 }
