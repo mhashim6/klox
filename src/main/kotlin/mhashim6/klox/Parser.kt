@@ -49,7 +49,7 @@ private fun declaration(): Stmt {
 
 private fun varDeclaration(): Stmt {
     val name = consume(IDENTIFIER, "Expect variable name.")
-    var initializer: Expr? = null
+    var initializer: Expr = Expr.Empty
     if (match(EQUAL)) initializer = expression()
     expectSemicolon()
     return Stmt.Var(name, initializer)
@@ -60,6 +60,7 @@ private fun statement(): Stmt = when {
     match(LEFT_BRACE) -> block()
     match(IF) -> ifStmt()
     match(WHILE) -> whileStmt()
+    match(FOR) -> forStmt()
     else -> expressionStatement()
 }
 
@@ -99,14 +100,30 @@ fun whileStmt(): Stmt {
     return Stmt.WhileStmt(condition, body)
 }
 
+fun forStmt(): Stmt {
+    consume(LEFT_PAREN, "Expect '(' after 'for'.")
+    val initializer: Stmt = if (match(VAR)) varDeclaration() else if (match(SEMICOLON)) Stmt.Empty else expressionStatement()
+
+    val condition: Expr = if (check(SEMICOLON)) Expr.Literal(true) else expression()
+    expectSemicolon("Expect ';' after loop condition.")
+
+    val increment = if (check(RIGHT_PAREN)) Stmt.Expression(Expr.Empty) else Stmt.Expression(expression())
+
+    consume(RIGHT_PAREN, "Expect ')' after for clauses.")
+
+    val body = Stmt.Block(listOf(statement(), increment))
+    val whileStmt = Stmt.WhileStmt(condition, body)
+    return Stmt.Block(listOf(initializer, whileStmt))
+}
+
 private fun expressionStatement(): Stmt {
     val expr = expression()
     expectSemicolon()
     return Stmt.Expression(expr)
 }
 
-private fun expectSemicolon() {
-    consume(SEMICOLON, "Expect ';' after value.")
+private fun expectSemicolon(msg: String = "Expect ';' after value.") {
+    consume(SEMICOLON, msg)
 }
 
 private fun expression(): Expr {
