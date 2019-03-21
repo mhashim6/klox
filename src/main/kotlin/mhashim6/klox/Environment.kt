@@ -10,14 +10,20 @@ class Environment(private val enclosing: Environment? = null) {
         values[name] = value
     }
 
-    fun get(name: String): Any? = when {
-        contains(name) -> values[name]
-        enclosing != null -> enclosing.get(name)
+    fun update(name: String, value: Any?): Unit = when {
+        localContains(name) -> define(name, value)
+        contains(name) -> enclosing!!.update(name, value)
         else -> throw EnvironmentError("Undefined variable: [$name].")
     }
 
-    fun contains(name: String) = values.keys.contains(name)
+    fun get(name: String): Any? = when {
+        localContains(name) -> values[name]
+        contains(name) -> enclosing!!.get(name)
+        else -> throw EnvironmentError("Undefined variable: [$name].")
+    }
 
+    fun contains(name: String): Boolean = localContains(name) || (enclosing?.contains(name) ?: false)
+    private fun localContains(name: String) = values.keys.contains(name)
 }
 
 class EnvironmentError(override val message: String) : RuntimeException()
