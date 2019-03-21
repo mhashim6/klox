@@ -20,6 +20,11 @@ fun interpret(statements: List<Stmt>, environment: Environment) {
                         else it.elseBranch
                 ), Environment(enclosing = environment))
             }
+            is Stmt.WhileStmt -> {
+                val whileEnv = Environment(enclosing = environment)
+                while (evaluate(it.condition, environment).isTruthy())
+                    interpret(listOf(it.body), whileEnv)
+            }
         }
     }
 }
@@ -97,18 +102,18 @@ private fun evaluate(expr: Expr?, environment: Environment): Any? = when (expr) 
             else -> null  //TODO
         }
     }
-    is Expr.Variable -> {
-        try {
-            environment.get(expr.name.lexeme)
-        } catch (e: EnvironmentError) {
-            throw RuntimeError(expr.name.line, e.message)
-        }
+    is Expr.Variable -> try {
+        environment.get(expr.name.lexeme)
+    } catch (e: EnvironmentError) {
+        throw RuntimeError(expr.name.line, e.message)
     }
-    is Expr.Assign -> {
-        if (environment.contains(expr.name.lexeme))
-            environment.define(expr.name.lexeme, evaluate(expr.value, environment))
-        else throw  RuntimeError(expr.name.line, "Undefined variable [${expr.name.lexeme}].")
+
+    is Expr.Assign -> try {
+        environment.update(expr.name.lexeme, evaluate(expr.value, environment))
+    } catch (e: EnvironmentError) {
+        throw RuntimeError(expr.name.line, e.message)
     }
+
     else -> null
 }
 

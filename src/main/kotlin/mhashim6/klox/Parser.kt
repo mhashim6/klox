@@ -59,6 +59,7 @@ private fun statement(): Stmt = when {
     match(PRINT) -> printStatement()
     match(LEFT_BRACE) -> block()
     match(IF) -> ifStmt()
+    match(WHILE) -> whileStmt()
     else -> expressionStatement()
 }
 
@@ -87,6 +88,15 @@ private fun ifStmt(): Stmt {
     if (match(ELSE)) elseBranch = statement()
 
     return Stmt.IfStmt(condition, thenBranch, elseBranch)
+}
+
+fun whileStmt(): Stmt {
+    consume(LEFT_PAREN, "Expect '(' after 'while'.")
+    val condition = expression()
+    consume(RIGHT_PAREN, "Expect ')' after while condition.")
+
+    val body: Stmt = statement()
+    return Stmt.WhileStmt(condition, body)
 }
 
 private fun expressionStatement(): Stmt {

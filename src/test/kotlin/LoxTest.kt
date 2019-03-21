@@ -8,6 +8,11 @@ class LoxTest {
 
     @Test
     fun run() {
-        Lox.run("if(5 == 5){print 5/0;} else{print \"dude, you've got issues.\";}")
+        Lox.run("var x = 5;\n" +
+                "while(x < 17){\n" +
+                "    x = x + 1;\n" +
+                "    print x;\n" +
+                "}")
     }
 }
+

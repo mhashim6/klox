@@ -44,7 +44,7 @@ object Lox {
         }
     }
 
-    val environment = Environment()
+    private val environment = Environment()
     fun run(source: String) {
         try {
             val tokens = scanTokens(source)
