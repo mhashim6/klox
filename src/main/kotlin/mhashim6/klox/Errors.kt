@@ -1,6 +1,5 @@
 package mhashim6.klox
 
-import java.lang.RuntimeException
 import java.util.*
 
 /**
@@ -39,4 +38,9 @@ sealed class LoxError(val line: Int, override val message: String) : RuntimeExce
     class RuntimeError(line: Int, message: String) : LoxError(line, message)
     class SyntaxError(val source: Token, message: String) : LoxError(source.line, message)
     class ScannerError(line: Int, message: String) : LoxError(line, message)
+}
+
+sealed class Breakers(val keyword: Token) : RuntimeException() {
+    class Break(keyword: Token) : Breakers(keyword)
+    class Return(keyword: Token, val value: Expr?) : Breakers(keyword)
 }
