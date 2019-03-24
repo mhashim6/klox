@@ -186,6 +186,7 @@ val keywords = mapOf<String, TokenType>(
         "or" to OR,
         "print" to PRINT,
         "return" to RETURN,
+        "break" to BREAK,
         "super" to SUPER,
         "this" to THIS,
         "true" to TRUE,
