@@ -1,9 +1,9 @@
 package mhashim6.klox
 
+import mhashim6.klox.LoxError.SyntaxError
 import mhashim6.klox.ParserContext.current
 import mhashim6.klox.ParserContext.tokens
 import mhashim6.klox.TokenType.*
-import mhashim6.klox.LoxError.SyntaxError
 
 /**
  *@author mhashim6 on 08/03/19
@@ -39,7 +39,7 @@ fun parse(tokens: List<Token>): List<Stmt> {
 
 private fun declaration(): Stmt {
     return try {
-        if (match(VAR)) varDeclaration() else statement()
+        if (match(VAR)) varDeclaration() else if (match(FUN)) funDeclaration() else statement()
     } catch (error: SyntaxError) {
         ErrorLogs.log(error)
         synchronize()
@@ -55,12 +55,33 @@ private fun varDeclaration(): Stmt {
     return Stmt.Var(name, initializer)
 }
 
+private fun funDeclaration(): Stmt {
+    val name = consume(IDENTIFIER, "Expect function name.")
+    consume(LEFT_PAREN, "Expect '(' after function name.")
+    val params = mutableListOf<Token>()
+
+    if (!check(RIGHT_PAREN)) do {
+        if ((params.size >= MAX_PARAMETERS)) throw SyntaxError(peek(), "Functions cannot have more than $MAX_PARAMETERS parameters.")
+        params.add(consume(IDENTIFIER, "Expect parameter"))
+    } while (match(COMMA))
+
+    consume(RIGHT_PAREN, "Expect ')' after function parameters.")
+
+    return Stmt.Fun(name, params, if (match(EQUAL)) statement() else statement())
+}
+
 private fun statement(): Stmt = when {
     match(PRINT) -> printStatement()
     match(LEFT_BRACE) -> block()
     match(IF) -> ifStmt()
     match(WHILE) -> whileStmt()
     match(FOR) -> forStmt()
+    match(RETURN) -> returnStatement()
+    match(BREAK) -> {
+        val keyword = previous
+        expectSemicolon()
+        Stmt.Break(keyword)
+    }
     else -> expressionStatement()
 }
 
@@ -88,7 +109,7 @@ private fun ifStmt(): Stmt {
     var elseBranch: Stmt = Stmt.Empty
     if (match(ELSE)) elseBranch = statement()
 
-    return Stmt.IfStmt(condition, thenBranch, elseBranch)
+    return Stmt.If(condition, thenBranch, elseBranch)
 }
 
 fun whileStmt(): Stmt {
@@ -97,7 +118,7 @@ fun whileStmt(): Stmt {
     consume(RIGHT_PAREN, "Expect ')' after while condition.")
 
     val body: Stmt = statement()
-    return Stmt.WhileStmt(condition, body)
+    return Stmt.While(condition, body)
 }
 
 fun forStmt(): Stmt {
@@ -112,8 +133,15 @@ fun forStmt(): Stmt {
     consume(RIGHT_PAREN, "Expect ')' after for clauses.")
 
     val body = Stmt.Block(listOf(statement(), increment))
-    val whileStmt = Stmt.WhileStmt(condition, body)
+    val whileStmt = Stmt.While(condition, body)
     return Stmt.Block(listOf(initializer, whileStmt))
+}
+
+fun returnStatement(): Stmt {
+    val keyword = previous
+    val value = if (check(SEMICOLON)) null else expression()
+    expectSemicolon()
+    return Stmt.Return(keyword, value)
 }
 
 private fun expressionStatement(): Stmt {
@@ -173,7 +201,28 @@ private fun unary(): Expr {
         return Expr.Unary(operator, right)
     }
 
-    return primary()
+    return call()
+}
+
+private fun call(): Expr {
+    var expr = primary()
+    while (true) {
+        if (match(LEFT_PAREN)) expr = finishCall(expr) else break
+    }
+    return expr
+}
+
+fun finishCall(callee: Expr): Expr {
+    val arguments = mutableListOf<Expr>()
+    if (!check(RIGHT_PAREN)) do {
+        if (arguments.size >= MAX_PARAMETERS)
+            throw SyntaxError(peek(), "Cannot have more than $MAX_PARAMETERS arguments.")
+
+        arguments.add(expression())
+    } while (match(COMMA))
+
+    val paren = consume(RIGHT_PAREN, "Expect ')' after arguments.")
+    return Expr.Call(callee, paren, arguments)
 }
 
 private fun primary(): Expr = when {
@@ -192,7 +241,7 @@ private fun primary(): Expr = when {
 
 
 private fun match(vararg types: TokenType): Boolean {
-    return if (types.firstOrNull(::check) != null) {
+    return if (types.firstOrNull { check(it) } != null) {
         advance()
         true
     } else false
@@ -215,8 +264,8 @@ private fun synchronize() {
     }
 }
 
-private fun check(type: TokenType): Boolean {
-    return if (isEOF) false else peek().type == type
+private fun check(type: TokenType, lookAhead: Int = 0): Boolean {
+    return if (isEOF) false else peek(lookAhead).type == type
 }
 
 private fun advance(): Token {
@@ -224,4 +273,4 @@ private fun advance(): Token {
     return previous
 }
 
-private fun peek() = tokens[current]
+private fun peek(lookAhead: Int = 0) = tokens[current + lookAhead]

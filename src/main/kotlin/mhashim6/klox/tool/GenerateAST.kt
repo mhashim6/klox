@@ -1,7 +1,7 @@
 package mhashim6.klox.tool
 
 import java.io.PrintWriter
-import java.util.Arrays
+import java.util.*
 
 /**
  * @author mhashim6 on 08/03/19
@@ -22,6 +22,7 @@ object GenerateAST {
                 "Unary    ~ operator: Token, right: Expr",
                 "Variable ~ name: Token",
                 "Assign   ~ name: Token, value:Expr",
+                "Call     ~ callee: Expr, paren:Token, arguments: List<Expr>",
                 "Empty ~ "
         ))
 
@@ -29,9 +30,12 @@ object GenerateAST {
                 "Expression ~ expression: Expr",
                 "Print ~ expression: Expr",
                 "Var ~ name: Token, initializer: Expr",
+                "Fun ~ name: Token, parameters: List<Token>, body: Stmt",
+                "Return ~ keyword: Token, value: Expr?",
                 "Block ~ statements: List<Stmt>",
-                "IfStmt ~ condition:Expr, thenBranch: Stmt, elseBranch: Stmt",
-                "WhileStmt ~ condition:Expr, body: Stmt",
+                "If ~ condition:Expr, thenBranch: Stmt, elseBranch: Stmt",
+                "While ~ condition:Expr, body: Stmt",
+                "Break ~ keyword: Token",
                 "Empty ~ "
         ))
     }
@@ -43,7 +47,6 @@ object GenerateAST {
 
         writer.println("package mhashim6.klox")
         writer.println()
-//        writer.println("import java.util.List")
         writer.println()
         writer.println("sealed class $baseName {")
 

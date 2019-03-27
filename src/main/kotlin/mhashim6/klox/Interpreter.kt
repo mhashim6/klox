@@ -1,7 +1,8 @@
 package mhashim6.klox
 
-import kotlin.math.floor
+import mhashim6.klox.Environment.Companion.globals
 import mhashim6.klox.LoxError.RuntimeError
+import kotlin.math.floor
 
 /**
  *@author mhashim6 on 09/03/19
@@ -11,20 +12,30 @@ fun interpret(statements: List<Stmt>, environment: Environment) {
     statements.forEach {
         when (it) {
             is Stmt.Var -> environment.define(it.name.lexeme, evaluate(it.initializer, environment))
+            is Stmt.Fun -> {
+                val loxCall = LoxFunction(it, environment)
+                globals.define(it.name.lexeme, loxCall)
+            }
+            is Stmt.Return -> throw Breakers.Return(it.keyword, it.value)
             is Stmt.Expression -> evaluate(it.expression, environment)
             is Stmt.Print -> println(stringify(evaluate(it.expression, environment)))
             is Stmt.Block -> interpret(it.statements, Environment(enclosing = environment))
-            is Stmt.IfStmt -> {
+            is Stmt.If -> {
                 interpret(listOf(
                         if (evaluate(it.condition, environment).isTruthy()) it.thenBranch
                         else it.elseBranch
                 ), Environment(enclosing = environment))
             }
-            is Stmt.WhileStmt -> {
+            is Stmt.While -> {
                 val whileEnv = Environment(enclosing = environment)
                 while (evaluate(it.condition, environment).isTruthy())
-                    interpret(listOf(it.body), whileEnv)
+                    try {
+                        interpret(listOf(it.body), whileEnv)
+                    } catch (b: Breakers.Break) {
+                        break
+                    }
             }
+            is Stmt.Break -> throw Breakers.Break(it.keyword)
         }
     }
 }
@@ -102,6 +113,20 @@ private fun evaluate(expr: Expr?, environment: Environment): Any? = when (expr) 
             else -> null  //TODO
         }
     }
+    is Expr.Call -> {
+        val function = with(evaluate(expr.callee, environment)) {
+            if (this !is LoxCall) throw RuntimeError(expr.paren.line, "Can only call functions and classes.")
+            else this
+        }
+        val args = expr.arguments.map { evaluate(it, environment) }
+        if (args.size != function.arity) throw RuntimeError(expr.paren.line, "Expected ${function.arity} arguments but got ${args.size}.")
+        try {
+            function.call(::interpret, args)
+        } catch (r: Breakers.Return) {
+            evaluate(r.value, environment)
+        }
+
+    }
     is Expr.Variable -> try {
         environment.get(expr.name.lexeme)
     } catch (e: EnvironmentError) {
@@ -135,13 +160,12 @@ private fun Any?.isTruthy(): Boolean = when (this) {
 private fun isEqual(obj1: Any?, obj2: Any?) = if (obj1 == null) obj2 == null else obj1 == obj2
 
 private fun plus(op1: Any?, op2: Any?, operator: Token): Any = when (op1) {
-    is Double -> {
-        when (op2) {
-            is Double -> op1 + op2
-            is String -> op1.toString() + op2
-            else -> throw  RuntimeError(operator.line, "Operands must be numbers or strings.")
-        }
+    is Double -> when (op2) {
+        is Double -> op1 + op2
+        is String -> op1.toString() + op2
+        else -> throw  RuntimeError(operator.line, "Operands must be numbers or strings.")
     }
+
     is String ->
         when (op2) {
             is String -> op1 + op2
