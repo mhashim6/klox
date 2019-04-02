@@ -1,13 +1,13 @@
 package mhashim6.klox
 
+import mhashim6.klox.LoxError.ScannerError
 import mhashim6.klox.ScannerContext.current
 import mhashim6.klox.ScannerContext.lexemeStart
 import mhashim6.klox.ScannerContext.line
 import mhashim6.klox.ScannerContext.source
 import mhashim6.klox.ScannerContext.tokens
-import java.util.ArrayList
 import mhashim6.klox.TokenType.*
-import mhashim6.klox.LoxError.ScannerError
+import java.util.*
 import java.lang.Character.MIN_VALUE as nullChar
 
 
