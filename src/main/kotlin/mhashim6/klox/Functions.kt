@@ -7,31 +7,32 @@ package mhashim6.klox
 
 const val MAX_PARAMETERS = 8
 
-typealias Interpreter = (statements: List<Stmt>, environment: Environment) -> Unit
+typealias Interpreter = (statements: List<Stmt>, context: Context) -> Context
 
 typealias FunctionImplementation = (interpreter: Interpreter, args: List<Any?>) -> Any?
 
 interface LoxCall {
     val arity: Int
     val call: FunctionImplementation
+
+    companion object Natives {
+        val time = object : LoxCall {
+            override val arity = 0
+            override val call: FunctionImplementation = { _, _ ->
+                System.currentTimeMillis().toDouble() / 1000.0
+            }
+        }
+    }
 }
 
 class LoxFunction(
         private val declaration: Stmt.Fun,
-        private val closure: Environment,
+        private val closure: Context,
         override val arity: Int = declaration.parameters.size,
         override val call: FunctionImplementation = { interpreter, args ->
-            val env = Environment(closure)
-            declaration.parameters.forEachIndexed { index, token -> env.define(token.lexeme, args[index]) }
-            interpreter(listOf(declaration.body), env)
+            var scope = closure
+            declaration.parameters.forEachIndexed { index, param -> scope = scope.mutate(scope.environment.define(param.lexeme, args[index])) }
+            interpreter(listOf(declaration.body), scope)
             null //default return type.
         }
 ) : LoxCall
-
-val time = object : LoxCall {
-    override val arity = 0
-    override val call: FunctionImplementation = { _, _ ->
-        System.currentTimeMillis().toDouble() / 1000.0
-    }
-
-}

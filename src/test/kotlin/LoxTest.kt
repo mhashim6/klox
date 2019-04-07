@@ -8,16 +8,11 @@ class LoxTest {
 
     @Test
     fun run() {
-        Lox.run("var a = \"global\";\n" +
-                "{\n" +
-                "  fun showA() {\n" +
-                "    print a;\n" +
-                "  }\n" +
-                "\n" +
-                "  showA();\n" +
-                "  var a = \"block\";\n" +
-                "  showA();\n" +
-                "}")
+        Lox.run("fun testBreak() = for(var i = 0; i < 25; i = i+1){\n" +
+                "    if(i >= 15) break;\n" +
+                "    else print i;\n" +
+                "}\n testBreak();")
     }
 }
+
 

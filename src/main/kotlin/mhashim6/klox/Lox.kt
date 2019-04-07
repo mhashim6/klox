@@ -1,6 +1,5 @@
 package mhashim6.klox
 
-import mhashim6.klox.Environment.Companion.globals
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.nio.charset.Charset
@@ -45,7 +44,6 @@ object Lox {
         }
     }
 
-    private val environment = Environment(globals)
     fun run(source: String) {
         try {
             val tokens = scanTokens(source)
@@ -55,8 +53,7 @@ object Lox {
                 ErrorLogs.clear()
                 return
             }
-
-            interpret(statements, environment)
+            interpret(statements)
         } catch (err: RuntimeException) {
             error(err)
         }
@@ -64,15 +61,9 @@ object Lox {
 
     private fun error(err: RuntimeException) {
         when (err) {
-            is LoxError -> when (err) {
-                is LoxError.ScannerError -> scannerError(err.line, err.message)
-                is LoxError.SyntaxError -> syntaxError(err.source, err.message)
-                is LoxError.RuntimeError -> runtimeError(err)
-            }
-            is Breakers -> when (err) {
-                is Breakers.Break -> runtimeError(LoxError.RuntimeError(err.keyword.line, "Illegal use of 'break' outside of a loop ."))
-                is Breakers.Return -> runtimeError(LoxError.RuntimeError(err.keyword.line, "Illegal use of 'return' outside of a function."))
-            }
+            is LoxError.ScannerError -> scannerError(err.line, err.message)
+            is LoxError.SyntaxError -> syntaxError(err.source, err.message)
+            is LoxError.RuntimeError -> runtimeError(err)
         }
     }
 

@@ -42,5 +42,5 @@ sealed class LoxError(val line: Int, override val message: String) : RuntimeExce
 
 sealed class Breakers(val keyword: Token) : RuntimeException() {
     class Break(keyword: Token) : Breakers(keyword)
-    class Return(keyword: Token, val value: Expr?) : Breakers(keyword)
+    class Return(keyword: Token, val value: Expr?, val context: Context) : Breakers(keyword)
 }
