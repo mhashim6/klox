@@ -12,25 +12,32 @@ class Environment(private val enclosing: Environment?) {
         values[name] = value
     }
 
-    fun update(name: String, value: Any?): Unit = when {
-        localContains(name) -> define(name, value)
-        contains(name) -> enclosing!!.update(name, value)
+    private fun ancestor(distance: Int) = (0 until distance).fold(this) { acc: Environment, _ -> acc.enclosing!! }
+
+    fun getAt(distance: Int, name: String): Any? {
+        return ancestor(distance).values[name]
+    }
+
+    fun assignAt(distance: Int, name: Token, value: Any?) {
+        ancestor(distance).values[name.lexeme] = value
+    }
+
+    fun assign(name: String, value: Any?): Unit = when {
+        contains(name) -> define(name, value)
+        enclosing != null -> enclosing.assign(name, value)
         else -> throw EnvironmentError("Undefined variable: [$name].")
     }
 
     fun get(name: String): Any? = when {
-        localContains(name) -> values[name]
-        contains(name) -> enclosing!!.get(name)
+        contains(name) -> values[name]
+        enclosing != null -> enclosing.get(name)
         else -> throw EnvironmentError("Undefined variable: [$name].")
     }
 
-    fun contains(name: String): Boolean = localContains(name) || (enclosing?.contains(name) ?: false)
-    private fun localContains(name: String) = values.keys.contains(name)
+    fun contains(name: String): Boolean = values.keys.contains(name)
 
-    companion object {
-        val globals = Environment(null).apply {
-            define("time", time) //TODO
-        }
+    override fun toString(): String {
+        return "Env:\n$values\nEnclosing:\n${this.enclosing}"
     }
 }
 
