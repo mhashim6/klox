@@ -35,7 +35,7 @@ private fun execute(statements: List<Stmt>, environment: Environment) {
                 val loxFun = LoxFunction(it, environment)
                 environment.define(it.name.lexeme, loxFun)
             }
-            is Stmt.Return -> throw Breakers.Return(it.keyword, it.value, environment)
+            is Stmt.Return -> throw Breakers.Return(it.keyword, evaluate(it.value, environment))
             is Stmt.Expression -> evaluate(it.expression, environment)
             is Stmt.Print -> println(stringify(evaluate(it.expression, environment)))
             is Stmt.Block -> execute(it.statements, Environment(enclosing = environment))
@@ -139,11 +139,7 @@ private fun evaluate(expr: Expr?, environment: Environment): Any? = when (expr) 
         }
         val args = expr.arguments.map { evaluate(it, environment) }
         if (args.size != function.arity) throw RuntimeError(expr.paren.line, "Expected ${function.arity} arguments but got ${args.size}.")
-        try {
-            function.call(::execute, args)
-        } catch (r: Breakers.Return) {
-            evaluate(r.value, r.environment)
-        }
+        function.call(::execute, args)
 
     }
     is Expr.Variable -> try {
