@@ -37,17 +37,19 @@ fun parse(tokens: List<Token>): List<Stmt> {
 
 }
 
-private fun declaration(): Stmt {
-    return try {
-        if (match(VAR)) varDeclaration() else if (match(FUN)) funDeclaration() else statement()
-    } catch (error: SyntaxError) {
-        ErrorLogs.log(error)
-        synchronize()
-        Stmt.Empty
+private fun declaration(): Stmt = try {
+    when {
+        match(VAR) -> varDeclaration()
+        match(FUN) -> funDeclaration()
+        else -> statement()
     }
+} catch (error: SyntaxError) {
+    ErrorLogs.log(error)
+    synchronize()
+    Stmt.Empty
 }
 
-private fun varDeclaration(): Stmt {
+private fun varDeclaration(): Stmt.Var {
     val name = consume(IDENTIFIER, "Expect variable name.")
     var initializer: Expr = Expr.Empty
     if (match(EQUAL)) initializer = expression()
@@ -55,7 +57,7 @@ private fun varDeclaration(): Stmt {
     return Stmt.Var(name, initializer)
 }
 
-private fun funDeclaration(): Stmt {
+private fun funDeclaration(): Stmt.Fun {
     val name = consume(IDENTIFIER, "Expect function name.")
     consume(LEFT_PAREN, "Expect '(' after function name.")
     val params = mutableListOf<Token>()
@@ -66,8 +68,9 @@ private fun funDeclaration(): Stmt {
     } while (match(COMMA))
 
     consume(RIGHT_PAREN, "Expect ')' after function parameters.")
+    consume(LEFT_BRACE, "Expect '{' before function body.");
 
-    return Stmt.Fun(name, params, if (match(EQUAL)) statement() else statement())
+    return Stmt.Fun(name, params, block())
 }
 
 private fun statement(): Stmt = when {
@@ -128,7 +131,7 @@ fun forStmt(): Stmt {
     val condition: Expr = if (check(SEMICOLON)) Expr.Literal(true) else expression()
     expectSemicolon("Expect ';' after loop condition.")
 
-    val increment = if (check(RIGHT_PAREN)) Stmt.Expression(Expr.Empty) else Stmt.Expression(expression())
+    val increment = Stmt.Expression(if (check(RIGHT_PAREN)) Expr.Empty else expression())
 
     consume(RIGHT_PAREN, "Expect ')' after for clauses.")
 
@@ -160,20 +163,14 @@ private fun expression(): Expr {
 
 private fun assignment(): Expr {
     val variable = or()
-    return when {
-        match(EQUAL) -> {
-            val equals = previous
-            val value = assignment()
-            when (variable) {
-                is Expr.Variable -> {
-                    val name = variable.name
-                    Expr.Assign(name, value)
-                }
-                else -> throw SyntaxError(equals, "Invalid assignment target.")
-            }
+    return if (match(EQUAL)) {
+        val equals = previous
+        val value = assignment()
+        when (variable) {
+            is Expr.Variable -> Expr.Assign(variable.name, value)
+            else -> throw SyntaxError(equals, "Invalid assignment target.")
         }
-        else -> variable
-    }
+    } else variable
 }
 
 private fun or() = binary(::and, OR)
