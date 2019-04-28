@@ -8,14 +8,17 @@ class LoxTest {
 
     @Test
     fun run() {
-        Lox.run("fun fibonacci(n) {\n" +
-                "  if (n <= 1) return n;\n" +
-                "  return fibonacci(n - 2) + fibonacci(n - 1);\n" +
+        Lox.run("class Cake {\n" +
+                "  taste() {\n" +
+                "    var adjective = \"delicious\";\n" +
+                "    print \"The \" + this.flavor + \" cake is \" + adjective + \"!\";\n" +
+                "  }\n" +
                 "}\n" +
                 "\n" +
-                "for (var i = 0; i < 20; i = i + 1) {\n" +
-                "  print fibonacci(i);\n" +
-                "}")
+                "var cake = Cake();\n" +
+                "cake.flavor = \"German chocolate\";\n" +
+                "cake.taste(); // Prints \"The German chocolate cake is delicious!\".." +
+                "\nprint this;")
     }
 }
 

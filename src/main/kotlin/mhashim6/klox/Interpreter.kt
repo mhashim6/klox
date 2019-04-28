@@ -24,6 +24,13 @@ private fun execute(statements: List<Stmt>, environment: Environment) {
     statements.forEach {
         when (it) {
             is Stmt.Var -> environment.define(it.name.lexeme, evaluate(it.initializer, environment))
+            is Stmt.Class -> {
+                val methods = mutableMapOf<String, LoxFunction>().apply {
+                    it.methods.forEach { method -> put(method.name.lexeme, LoxFunction(method, environment)) }
+                }
+                val loxClass = LoxClass(it.name.lexeme, methods)
+                environment.define(it.name.lexeme, loxClass)
+            }
             is Stmt.Fun -> {
                 val loxFun = LoxFunction(it, environment)
                 environment.define(it.name.lexeme, loxFun)
@@ -127,7 +134,7 @@ private fun evaluate(expr: Expr?, environment: Environment): Any? = when (expr) 
     is Expr.Call -> {
         val function = with(evaluate(expr.callee, environment)) {
             if (this !is LoxCallable) {
-                throw RuntimeError(expr.paren.line, "Can only call functions and classes.")
+                throw RuntimeError(expr.paren.line, "Can only call methods and classes.")
             } else this
         }
         val args = expr.arguments.map { evaluate(it, environment) }
@@ -157,6 +164,22 @@ private fun evaluate(expr: Expr?, environment: Environment): Any? = when (expr) 
         throw RuntimeError(expr.name.line, e.message)
     }
 
+    is Expr.Get -> {
+        val instance = evaluate(expr.loxObject, environment)
+        if (instance is LoxObject) instance[expr.name]
+        else throw RuntimeError(expr.name.line, "Only instances have properties.")
+    }
+    is Expr.Set -> {
+        val instance = evaluate(expr.loxObject, environment)
+
+        if (instance is LoxObject) {
+            val value = evaluate(expr.value, environment)
+            instance[expr.name] = value
+            value
+        } else
+            throw RuntimeError(expr.name.line, "Only instances have fields.")
+    }
+    is Expr.This -> lookUpVariable(expr.keyword, expr, environment)
     else -> null
 }
 

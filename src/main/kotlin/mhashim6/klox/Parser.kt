@@ -41,12 +41,22 @@ private fun declaration(): Stmt = try {
     when {
         match(VAR) -> varDeclaration()
         match(FUN) -> funDeclaration()
+        match(CLASS) -> classDeclaration()
         else -> statement()
     }
 } catch (error: SyntaxError) {
     ErrorLogs.log(error)
     synchronize()
     Stmt.Empty
+}
+
+private fun classDeclaration(): Stmt {
+    val name = consume(IDENTIFIER, "Expect class name.")
+    consume(LEFT_BRACE, "Expect '{' before class body.")
+    val functions = mutableListOf<Stmt.Fun>()
+    while (!check(RIGHT_BRACE) && !isEOF) functions.add(funDeclaration())
+    consume(RIGHT_BRACE, "Expect '}' after class body.")
+    return Stmt.Class(name, functions)
 }
 
 private fun varDeclaration(): Stmt.Var {
@@ -68,7 +78,7 @@ private fun funDeclaration(): Stmt.Fun {
     } while (match(COMMA))
 
     consume(RIGHT_PAREN, "Expect ')' after function parameters.")
-    consume(LEFT_BRACE, "Expect '{' before function body.");
+    consume(LEFT_BRACE, "Expect '{' before function body.")
 
     return Stmt.Fun(name, params, block())
 }
@@ -168,6 +178,7 @@ private fun assignment(): Expr {
         val value = assignment()
         when (variable) {
             is Expr.Variable -> Expr.Assign(variable.name, value)
+            is Expr.Get -> Expr.Set(variable.loxObject, variable.name, value)
             else -> throw SyntaxError(equals, "Invalid assignment target.")
         }
     } else variable
@@ -204,7 +215,9 @@ private fun unary(): Expr {
 private fun call(): Expr {
     var expr = primary()
     while (true) {
-        if (match(LEFT_PAREN)) expr = finishCall(expr) else break
+        expr = if (match(LEFT_PAREN)) finishCall(expr)
+        else if (match(DOT)) Expr.Get(expr, consume(IDENTIFIER, "Expect property name after '.'."))
+        else break
     }
     return expr
 }
@@ -227,6 +240,7 @@ private fun primary(): Expr = when {
     match(TRUE) -> Expr.Literal(true)
     match(NIL) -> Expr.Literal(null)
     match(STRING, NUMBER) -> Expr.Literal(previous.literal)
+    match(THIS) -> Expr.This(previous)
     match(IDENTIFIER) -> Expr.Variable(previous)
     match(LEFT_PAREN) -> {
         val expr = expression()

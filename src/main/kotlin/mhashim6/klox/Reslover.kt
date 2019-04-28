@@ -10,93 +10,108 @@ import java.util.*
  */
 
 
-fun resolve(statements: List<Stmt>): Map<Expr, Int> {
+fun resolve(statements: List<Stmt>, scopeType: ScopeType = ScopeType.NONE): Map<Expr, Int> {
     statements.forEach {
         when (it) {
             is Stmt.Expression -> {
-                resolveExpr(it.expression)
+                resolveExpr(it.expression, scopeType)
             }
             is Stmt.Print -> {
-                resolveExpr(it.expression)
+                resolveExpr(it.expression, scopeType)
             }
             is Stmt.Var -> {
                 ResolverState.declare(it.name)
-                if (it.initializer !== Expr.Empty) resolveExpr(it.initializer);
+                if (it.initializer !== Expr.Empty) resolveExpr(it.initializer, scopeType)
                 ResolverState.define(it.name)
             }
             is Stmt.Fun -> {
                 ResolverState.declare(it.name)
                 ResolverState.define(it.name)
-                resolveFunction(it, ScopeType.FUNCTION)
+                resolveFunction(it)
+            }
+            is Stmt.Class -> {
+                ResolverState.declare(it.name)
+                ResolverState.define(it.name)
+
+                ResolverState.beginScope()
+                ResolverState.scopes.peek()["this"] = true
+
+                it.methods.forEach { method -> resolveFunction(method, ScopeType.METHOD) }
+                ResolverState.endScope()
             }
             is Stmt.Return -> {
-                if (currentScope == ScopeType.NONE)
-                    throw ResolverError(it.keyword, "Illegal use of 'return' outside of a function.")
+                if (scopeType == ScopeType.NONE)
+                    ErrorLogs.log(ResolverError(it.keyword, "Illegal use of 'return' outside of a function."))
 
-                if (it.value != null) resolveExpr(it.value)
+                if (it.value != null) resolveExpr(it.value, scopeType)
             }
             is Stmt.Block -> {
                 ResolverState.beginScope()
-                resolve(it.statements)
+                resolve(it.statements, scopeType)
                 ResolverState.endScope()
             }
             is Stmt.If -> {
-                resolveExpr(it.condition)
-                resolve(listOf(it.thenBranch))
-                if (it.elseBranch !== Stmt.Empty) resolve(listOf(it.elseBranch))
+                resolveExpr(it.condition, scopeType)
+                resolve(listOf(it.thenBranch), scopeType)
+                if (it.elseBranch !== Stmt.Empty) resolve(listOf(it.elseBranch), scopeType)
             }
             is Stmt.While -> {
-                resolveExpr(it.condition)
-                val prevScope = currentScope
-                currentScope = ScopeType.LOOP
-                resolve(listOf(it.body))
-                currentScope = prevScope
+                resolveExpr(it.condition, scopeType)
+                resolve(listOf(it.body), ScopeType.LOOP)
             }
 
             is Stmt.Break ->
                 if (currentScope != ScopeType.LOOP)
-                    throw LoxError.RuntimeError(it.keyword.line, "Illegal use of 'break' outside of a loop .")
+                    ErrorLogs.log(LoxError.RuntimeError(it.keyword.line, "Illegal use of 'break' outside of a loop ."))
         }
     }
     return ResolverState.locals
 }
 
-private fun resolveFunction(func: Stmt.Fun, type: ScopeType) {
-    val prevScope = currentScope
-    currentScope = type
-
+private fun resolveFunction(func: Stmt.Fun, scopeType: ScopeType = ScopeType.FUNCTION) {
     ResolverState.beginScope()
     func.parameters.forEach { param ->
         ResolverState.declare(param)
         ResolverState.define(param)
     }
-    resolve(listOf(func.body))
+    resolve(listOf(func.body), scopeType)
     ResolverState.endScope()
-    currentScope = prevScope;
 }
 
-private fun resolveExpr(expr: Expr) {
+private fun resolveExpr(expr: Expr, scopeType: ScopeType) {
     when (expr) {
         is Expr.Binary -> {
-            resolveExpr(expr.left)
-            resolveExpr(expr.right)
+            resolveExpr(expr.left, scopeType)
+            resolveExpr(expr.right, scopeType)
         }
-        is Expr.Grouping -> resolveExpr(expr.expression)
-        is Expr.Unary -> resolveExpr(expr.right)
+        is Expr.Grouping -> resolveExpr(expr.expression, scopeType)
+        is Expr.Unary -> resolveExpr(expr.right, scopeType)
         is Expr.Variable -> {
             if (!ResolverState.scopes.isEmpty() &&
                     ResolverState.scopes.peek()[expr.name.lexeme] == false) {
-                throw ResolverError(expr.name, "Cannot read local variable in its own initializer.")
+                ErrorLogs.log(ResolverError(expr.name, "Cannot read local variable in its own initializer."))
             }
             ResolverState.resolveLocal(expr, expr.name)
         }
         is Expr.Assign -> {
-            resolveExpr(expr.value)
+            resolveExpr(expr.value, scopeType)
             ResolverState.resolveLocal(expr, expr.name)
         }
         is Expr.Call -> {
-            resolveExpr(expr.callee)
-            expr.arguments.forEach(::resolveExpr)
+            resolveExpr(expr.callee, scopeType)
+            expr.arguments.forEach { resolveExpr(it, scopeType) }
+        }
+        is Expr.Get -> resolveExpr(expr.loxObject, scopeType)
+        is Expr.Set -> {
+            resolveExpr(expr.value, scopeType)
+            resolveExpr(expr.loxObject, scopeType)
+        }
+        is Expr.This -> {
+            if (scopeType == ScopeType.CLASS || scopeType == ScopeType.METHOD)
+                ResolverState.resolveLocal(expr, expr.keyword)
+            else
+                ErrorLogs.log(ResolverError(expr.keyword, "Cannot use 'this' outside of a class."))
+
         }
     }
 }
@@ -113,7 +128,7 @@ private fun ResolverState.declare(name: Token) {
     val scope = scopes.peek()
 
     if (scope.containsKey(name.lexeme)) {
-        throw ResolverError(name, "Variable with this name already declared in this scope.");
+        ErrorLogs.log(ResolverError(name, "Variable with this name already declared in this scope."))
     }
 
     scope[name.lexeme] = false
@@ -140,8 +155,10 @@ private fun ResolverState.resolveLocal(expr: Expr, name: Token) {
     //we are global!
 }
 
-private enum class ScopeType {
+enum class ScopeType {
     NONE,
     FUNCTION,
+    METHOD,
+    CLASS,
     LOOP
 }

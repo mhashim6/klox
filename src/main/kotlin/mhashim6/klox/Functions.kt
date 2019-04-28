@@ -18,6 +18,11 @@ class LoxFunction(
         interpreter(listOf(declaration.body), env)
         return null //default return type.
     }
+
+    fun bind(loxObject: LoxObject): LoxFunction {
+        val env = Environment(closure).apply { define("this", loxObject) }
+        return LoxFunction(declaration, env, arity)
+    }
 }
 
 val time = object : LoxCallable {
