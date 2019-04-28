@@ -1,6 +1,5 @@
 package mhashim6.klox
 
-import mhashim6.klox.Environment.Companion.globals
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.nio.charset.Charset
@@ -28,7 +27,7 @@ object Lox {
     private fun runFile(path: String) {
         val bytes = Files.readAllBytes(Paths.get(path))
         run(String(bytes, Charset.defaultCharset()))
-        if (ErrorLogs.hasSyntaxErrors)
+        if (ErrorLogs.hasErrors)
             System.exit(65)
         if (hadRuntimeError)
             System.exit(70)
@@ -45,35 +44,29 @@ object Lox {
         }
     }
 
-    private val environment = Environment(globals)
     fun run(source: String) {
         try {
             val tokens = scanTokens(source)
             val statements = parse(tokens)
-            if (ErrorLogs.hasSyntaxErrors) {
+            val locals = resolve(statements)
+
+            if (ErrorLogs.hasErrors) {
                 ErrorLogs.errors.forEach(::error)
                 ErrorLogs.clear()
                 return
             }
 
-            interpret(statements, environment)
-        } catch (err: RuntimeException) {
+            interpret(statements, locals)
+        } catch (err: LoxError.RuntimeError) {
             error(err)
         }
     }
 
-    private fun error(err: RuntimeException) {
-        when (err) {
-            is LoxError -> when (err) {
-                is LoxError.ScannerError -> scannerError(err.line, err.message)
-                is LoxError.SyntaxError -> syntaxError(err.source, err.message)
-                is LoxError.RuntimeError -> runtimeError(err)
-            }
-            is Breakers -> when (err) {
-                is Breakers.Break -> runtimeError(LoxError.RuntimeError(err.keyword.line, "Illegal use of 'break' outside of a loop ."))
-                is Breakers.Return -> runtimeError(LoxError.RuntimeError(err.keyword.line, "Illegal use of 'return' outside of a function."))
-            }
-        }
+    private fun error(err: LoxError) = when (err) {
+        is LoxError.ScannerError -> scannerError(err.line, err.message)
+        is LoxError.SyntaxError -> syntaxError(err.source, err.message)
+        is LoxError.ResolverError -> resolverError(err.source, err.message)
+        is LoxError.RuntimeError -> runtimeError(err)
     }
 
     private fun scannerError(line: Int, message: String) {
@@ -85,6 +78,14 @@ object Lox {
             report(token.line, " at end", message)
         } else {
             report(token.line, " at '" + token.lexeme + "'", message)
+        }
+    }
+
+    private fun resolverError(source: Token, message: String) {
+        if (source.type === TokenType.EOF) {
+            report(source.line, " at end", message)
+        } else {
+            report(source.line, " at '" + source.lexeme + "'", message)
         }
     }
 
