@@ -11,6 +11,7 @@ class LoxClass(val name: String, private val methods: MutableMap<String, LoxFunc
 
     override fun call(interpreter: Interpreter, args: List<Any?>): Any? {
         val instance = LoxObject(klass = this)
+        findMethod("init")?.bind(instance)?.call(interpreter, args) //initializer/constructor method.
         return instance
     }
 
@@ -21,7 +22,7 @@ class LoxClass(val name: String, private val methods: MutableMap<String, LoxFunc
 
     }
 
-    override val arity: Int = 0
+    override val arity: Int = findMethod("init")?.arity ?: 0
 }
 
 class LoxObject(private val klass: LoxClass) {

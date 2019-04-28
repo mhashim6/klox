@@ -26,13 +26,13 @@ private fun execute(statements: List<Stmt>, environment: Environment) {
             is Stmt.Var -> environment.define(it.name.lexeme, evaluate(it.initializer, environment))
             is Stmt.Class -> {
                 val methods = mutableMapOf<String, LoxFunction>().apply {
-                    it.methods.forEach { method -> put(method.name.lexeme, LoxFunction(method, environment)) }
+                    it.methods.forEach { method -> put(method.name.lexeme, LoxFunction(method, environment, isInit = method.name.lexeme == "init")) }
                 }
                 val loxClass = LoxClass(it.name.lexeme, methods)
                 environment.define(it.name.lexeme, loxClass)
             }
             is Stmt.Fun -> {
-                val loxFun = LoxFunction(it, environment)
+                val loxFun = LoxFunction(it, environment, isInit = false)
                 environment.define(it.name.lexeme, loxFun)
             }
             is Stmt.Return -> throw Breakers.Return(it.keyword, evaluate(it.value, environment))

@@ -36,14 +36,20 @@ fun resolve(statements: List<Stmt>, scopeType: ScopeType = ScopeType.NONE): Map<
                 ResolverState.beginScope()
                 ResolverState.scopes.peek()["this"] = true
 
-                it.methods.forEach { method -> resolveFunction(method, ScopeType.METHOD) }
+                it.methods.forEach { method ->
+                    resolveFunction(method,
+                            if (method.name.lexeme == "init") ScopeType.INITIALIZER else ScopeType.METHOD)
+                }
                 ResolverState.endScope()
             }
             is Stmt.Return -> {
                 if (scopeType == ScopeType.NONE)
                     ErrorLogs.log(ResolverError(it.keyword, "Illegal use of 'return' outside of a function."))
-
-                if (it.value != null) resolveExpr(it.value, scopeType)
+                else if (it.value != null) {
+                    if (scopeType == ScopeType.INITIALIZER)
+                        ErrorLogs.log(ResolverError(it.keyword, "Cannot return a value from an initializer."))
+                    else resolveExpr(it.value, scopeType)
+                }
             }
             is Stmt.Block -> {
                 ResolverState.beginScope()
@@ -59,7 +65,6 @@ fun resolve(statements: List<Stmt>, scopeType: ScopeType = ScopeType.NONE): Map<
                 resolveExpr(it.condition, scopeType)
                 resolve(listOf(it.body), ScopeType.LOOP)
             }
-
             is Stmt.Break ->
                 if (currentScope != ScopeType.LOOP)
                     ErrorLogs.log(LoxError.RuntimeError(it.keyword.line, "Illegal use of 'break' outside of a loop ."))
@@ -90,8 +95,7 @@ private fun resolveExpr(expr: Expr, scopeType: ScopeType) {
             if (!ResolverState.scopes.isEmpty() &&
                     ResolverState.scopes.peek()[expr.name.lexeme] == false) {
                 ErrorLogs.log(ResolverError(expr.name, "Cannot read local variable in its own initializer."))
-            }
-            ResolverState.resolveLocal(expr, expr.name)
+            } else ResolverState.resolveLocal(expr, expr.name)
         }
         is Expr.Assign -> {
             resolveExpr(expr.value, scopeType)
@@ -107,7 +111,7 @@ private fun resolveExpr(expr: Expr, scopeType: ScopeType) {
             resolveExpr(expr.loxObject, scopeType)
         }
         is Expr.This -> {
-            if (scopeType == ScopeType.CLASS || scopeType == ScopeType.METHOD)
+            if (arrayOf(ScopeType.CLASS, ScopeType.INITIALIZER, ScopeType.METHOD).contains(scopeType))
                 ResolverState.resolveLocal(expr, expr.keyword)
             else
                 ErrorLogs.log(ResolverError(expr.keyword, "Cannot use 'this' outside of a class."))
@@ -129,6 +133,7 @@ private fun ResolverState.declare(name: Token) {
 
     if (scope.containsKey(name.lexeme)) {
         ErrorLogs.log(ResolverError(name, "Variable with this name already declared in this scope."))
+        return
     }
 
     scope[name.lexeme] = false
@@ -160,5 +165,6 @@ enum class ScopeType {
     FUNCTION,
     METHOD,
     CLASS,
+    INITIALIZER,
     LOOP
 }

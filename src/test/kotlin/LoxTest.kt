@@ -17,8 +17,7 @@ class LoxTest {
                 "\n" +
                 "var cake = Cake();\n" +
                 "cake.flavor = \"German chocolate\";\n" +
-                "cake.taste(); // Prints \"The German chocolate cake is delicious!\".." +
-                "\nprint this;")
+                "cake.taste(); // Prints \"The German chocolate cake is delicious!\"..")
     }
 }
 

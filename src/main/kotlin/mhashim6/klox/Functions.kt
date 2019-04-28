@@ -10,7 +10,9 @@ const val MAX_PARAMETERS = 8
 class LoxFunction(
         private val declaration: Stmt.Fun,
         private val closure: Environment,
-        override val arity: Int = declaration.parameters.size
+        override val arity: Int = declaration.parameters.size,
+        /*whether this is a initializer/constructor function.*/
+        private val isInit: Boolean
 ) : LoxCallable {
     override fun call(interpreter: Interpreter, args: List<Any?>): Any? {
         val env = Environment(closure)
@@ -18,15 +20,15 @@ class LoxFunction(
         try {
             interpreter(listOf(declaration.body), env)
         } catch (r: Breakers.Return) {
+            if (isInit) return closure.getAt(0, "this")
             return r.value
         }
-
-        return null //default return type.
+        return null //default return value.
     }
 
     fun bind(loxObject: LoxObject): LoxFunction {
         val env = Environment(closure).apply { define("this", loxObject) }
-        return LoxFunction(declaration, env, arity)
+        return LoxFunction(declaration, env, arity, isInit)
     }
 }
 
