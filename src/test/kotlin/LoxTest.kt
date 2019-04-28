@@ -8,15 +8,13 @@ class LoxTest {
 
     @Test
     fun run() {
-        Lox.run("var a = \"global\";\n" +
-                "{\n" +
-                "  fun showA() {\n" +
-                "    print a;\n" +
-                "  }\n" +
+        Lox.run("fun fibonacci(n) {\n" +
+                "  if (n <= 1) return n;\n" +
+                "  return fibonacci(n - 2) + fibonacci(n - 1);\n" +
+                "}\n" +
                 "\n" +
-                "  showA();\n" +
-                "  var a = \"block\";\n" +
-                "  showA();\n" +
+                "for (var i = 0; i < 20; i = i + 1) {\n" +
+                "  print fibonacci(i);\n" +
                 "}")
     }
 }

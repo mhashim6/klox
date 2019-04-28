@@ -1,36 +1,47 @@
 package mhashim6.klox
 
-import mhashim6.klox.Environment.Companion.globals
 import mhashim6.klox.LoxError.RuntimeError
 import kotlin.math.floor
+
 
 /**
  *@author mhashim6 on 09/03/19
  */
 
-fun interpret(statements: List<Stmt>, environment: Environment) {
+
+private val globals = Environment(null).apply {
+    define("time", time)
+}
+
+private lateinit var locals: Map<Expr, Int>
+
+fun interpret(statements: List<Stmt>, localVars: Map<Expr, Int>) {
+    locals = localVars
+    execute(statements, globals)
+}
+
+private fun execute(statements: List<Stmt>, environment: Environment) {
     statements.forEach {
         when (it) {
             is Stmt.Var -> environment.define(it.name.lexeme, evaluate(it.initializer, environment))
             is Stmt.Fun -> {
-                val loxCall = LoxFunction(it, environment)
-                globals.define(it.name.lexeme, loxCall)
+                val loxFun = LoxFunction(it, environment)
+                environment.define(it.name.lexeme, loxFun)
             }
-            is Stmt.Return -> throw Breakers.Return(it.keyword, it.value)
+            is Stmt.Return -> throw Breakers.Return(it.keyword, it.value, environment)
             is Stmt.Expression -> evaluate(it.expression, environment)
             is Stmt.Print -> println(stringify(evaluate(it.expression, environment)))
-            is Stmt.Block -> interpret(it.statements, Environment(enclosing = environment))
+            is Stmt.Block -> execute(it.statements, Environment(enclosing = environment))
             is Stmt.If -> {
-                interpret(listOf(
+                execute(listOf(
                         if (evaluate(it.condition, environment).isTruthy()) it.thenBranch
                         else it.elseBranch
-                ), Environment(enclosing = environment))
+                ), environment)
             }
             is Stmt.While -> {
-                val whileEnv = Environment(enclosing = environment)
                 while (evaluate(it.condition, environment).isTruthy())
                     try {
-                        interpret(listOf(it.body), whileEnv)
+                        execute(listOf(it.body), environment)
                     } catch (b: Breakers.Break) {
                         break
                     }
@@ -115,31 +126,45 @@ private fun evaluate(expr: Expr?, environment: Environment): Any? = when (expr) 
     }
     is Expr.Call -> {
         val function = with(evaluate(expr.callee, environment)) {
-            if (this !is LoxCall) throw RuntimeError(expr.paren.line, "Can only call functions and classes.")
-            else this
+            if (this !is LoxCallable) {
+                throw RuntimeError(expr.paren.line, "Can only call functions and classes.")
+            } else this
         }
         val args = expr.arguments.map { evaluate(it, environment) }
         if (args.size != function.arity) throw RuntimeError(expr.paren.line, "Expected ${function.arity} arguments but got ${args.size}.")
         try {
-            function.call(::interpret, args)
+            function.call(::execute, args)
         } catch (r: Breakers.Return) {
-            evaluate(r.value, environment)
+            evaluate(r.value, r.environment)
         }
 
     }
     is Expr.Variable -> try {
-        environment.get(expr.name.lexeme)
+        lookUpVariable(expr.name, expr, environment)
     } catch (e: EnvironmentError) {
         throw RuntimeError(expr.name.line, e.message)
     }
 
     is Expr.Assign -> try {
-        environment.update(expr.name.lexeme, evaluate(expr.value, environment))
+        val value = evaluate(expr.value, environment)
+        val distance = locals[expr]
+        if (distance != null) {
+            environment.assignAt(distance, expr.name, value)
+        } else {
+            globals.assign(expr.name.lexeme, value)
+        }
     } catch (e: EnvironmentError) {
         throw RuntimeError(expr.name.line, e.message)
     }
 
     else -> null
+}
+
+private fun lookUpVariable(name: Token, expr: Expr, environment: Environment): Any? {
+    val distance = locals[expr]
+    return if (distance != null)
+        environment.getAt(distance, name.lexeme)
+    else globals.get(name.lexeme)
 }
 
 private inline fun arithmetic(op1: Any?, op2: Any?, operation: (Double, Double) -> Double): Double {
