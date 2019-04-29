@@ -245,6 +245,12 @@ private fun primary(): Expr = when {
     match(NIL) -> Expr.Literal(null)
     match(STRING, NUMBER) -> Expr.Literal(previous.literal)
     match(THIS) -> Expr.This(previous)
+    match(SUPER) -> {
+        val keyword = previous
+        consume(DOT, "Expect '.' after 'super'.")
+        val method = consume(IDENTIFIER, "Expect superclass method name.")
+        Expr.Super(keyword, method)
+    }
     match(IDENTIFIER) -> Expr.Variable(previous)
     match(LEFT_PAREN) -> {
         val expr = expression()

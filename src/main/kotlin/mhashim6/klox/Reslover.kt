@@ -27,25 +27,34 @@ fun resolve(statements: List<Stmt>, scopeType: ScopeType = ScopeType.NONE): Map<
             is Stmt.Fun -> {
                 ResolverState.declare(it.name)
                 ResolverState.define(it.name)
-                resolveFunction(it)
+                resolveFunction(it, ScopeType.FUNCTION)
             }
             is Stmt.Class -> {
                 ResolverState.declare(it.name)
                 ResolverState.define(it.name)
+                var methodScopeType = ScopeType.METHOD
                 it.superclass?.let { superClass ->
+                    methodScopeType = ScopeType.SUBCLASS
+
                     if (superClass.name.lexeme == it.name.lexeme)
                         ErrorLogs.log(ResolverError(it.name, "A class cannot inherit from itself."))
 
                     resolveExpr(superClass, scopeType)
+
+                    ResolverState.beginScope()
+                    ResolverState.scopes.peek().put("super", true)
+
                 }
                 ResolverState.beginScope()
                 ResolverState.scopes.peek()["this"] = true
 
                 it.methods.forEach { method ->
                     resolveFunction(method,
-                            if (method.name.lexeme == "init") ScopeType.INITIALIZER else ScopeType.METHOD)
+                            if (method.name.lexeme == "init") ScopeType.INITIALIZER else methodScopeType)
                 }
                 ResolverState.endScope()
+                if (it.superclass != null) ResolverState.endScope()
+
             }
             is Stmt.Return -> {
                 if (scopeType == ScopeType.NONE)
@@ -78,7 +87,7 @@ fun resolve(statements: List<Stmt>, scopeType: ScopeType = ScopeType.NONE): Map<
     return ResolverState.locals
 }
 
-private fun resolveFunction(func: Stmt.Fun, scopeType: ScopeType = ScopeType.FUNCTION) {
+private fun resolveFunction(func: Stmt.Fun, scopeType: ScopeType) {
     ResolverState.beginScope()
     func.parameters.forEach { param ->
         ResolverState.declare(param)
@@ -116,11 +125,16 @@ private fun resolveExpr(expr: Expr, scopeType: ScopeType) {
             resolveExpr(expr.loxObject, scopeType)
         }
         is Expr.This -> {
-            if (arrayOf(ScopeType.CLASS, ScopeType.INITIALIZER, ScopeType.METHOD).contains(scopeType))
+            if (arrayOf(ScopeType.CLASS, ScopeType.SUBCLASS, ScopeType.INITIALIZER, ScopeType.METHOD).contains(scopeType))
                 ResolverState.resolveLocal(expr, expr.keyword)
             else
                 ErrorLogs.log(ResolverError(expr.keyword, "Cannot use 'this' outside of a class."))
-
+        }
+        is Expr.Super -> {
+            if (scopeType != ScopeType.SUBCLASS)
+                ErrorLogs.log(ResolverError(expr.keyword, "Cannot use 'super' in a class with no superclass."))
+            else
+                ResolverState.resolveLocal(expr, expr.keyword)
         }
     }
 }
@@ -170,6 +184,7 @@ enum class ScopeType {
     FUNCTION,
     METHOD,
     CLASS,
+    SUBCLASS,
     INITIALIZER,
     LOOP
 }

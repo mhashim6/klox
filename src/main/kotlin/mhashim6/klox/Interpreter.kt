@@ -25,14 +25,19 @@ private fun execute(statements: List<Stmt>, environment: Environment) {
         when (it) {
             is Stmt.Var -> environment.define(it.name.lexeme, evaluate(it.initializer, environment))
             is Stmt.Class -> {
-                val superclass = (if (it.superclass != null)
-                    evaluate(it.superclass, environment) else null) as? LoxClass
-                        ?: throw RuntimeError(it.name.line, "Superclass must be a class.")
+                val superclass = if (it.superclass != null) evaluate(it.superclass, environment) else null
+
+                if (superclass != null && superclass !is LoxClass)
+                    throw RuntimeError(it.name.line, "Superclass must be a class.")
+
+                val closure = if (it.superclass != null) Environment(environment).apply {
+                    define("super", superclass)
+                } else environment
 
                 val methods = mutableMapOf<String, LoxFunction>().apply {
-                    it.methods.forEach { method -> put(method.name.lexeme, LoxFunction(method, environment, isInit = method.name.lexeme == "init")) }
+                    it.methods.forEach { method -> put(method.name.lexeme, LoxFunction(method, closure, isInit = method.name.lexeme == "init")) }
                 }
-                val loxClass = LoxClass(it.name.lexeme, superclass, methods)
+                val loxClass = LoxClass(it.name.lexeme, superclass as? LoxClass, methods)
                 environment.define(it.name.lexeme, loxClass)
             }
             is Stmt.Fun -> {
@@ -180,6 +185,16 @@ private fun evaluate(expr: Expr?, environment: Environment): Any? = when (expr) 
             throw RuntimeError(expr.name.line, "Only instances have fields.")
     }
     is Expr.This -> lookUpVariable(expr.keyword, expr, environment)
+    is Expr.Super -> { //TODO this whole thing is a mess!
+        val distance = locals[expr]!!
+        val superclass = environment.getAt(distance, "super") as LoxClass
+
+        // "this" is always one level nearer than "super"'s environment.
+        val loxObject = environment.getAt(distance - 1, "this") as LoxObject
+
+        val method = superclass.findMethod(expr.method.lexeme)
+        method?.bind(loxObject) ?: throw RuntimeError(expr.keyword.line, "Undefined property '${expr.method.lexeme}'.")
+    }
     else -> null
 }
 

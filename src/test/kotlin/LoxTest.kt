@@ -8,16 +8,23 @@ class LoxTest {
 
     @Test
     fun run() {
-        Lox.run("class Cake {\n" +
-                "  taste() {\n" +
-                "    var adjective = \"delicious\";\n" +
-                "    print \"The \" + this.flavor + \" cake is \" + adjective + \"!\";\n" +
+        Lox.run("class Doughnut {\n" +
+                "  cook() {\n" +
+                "    print \"Fry until golden brown.\";\n" +
                 "  }\n" +
                 "}\n" +
                 "\n" +
-                "var cake = Cake();\n" +
-                "cake.flavor = \"German chocolate\";\n" +
-                "cake.taste(); // Prints \"The German chocolate cake is delicious!\"..")
+                "class BostonCream < Doughnut {\n" +
+                "  cook() {\n" +
+                "    super.cook();\n" +
+                "    print \"Pipe full of custard and coat with chocolate.\";\n" +
+                "  }\n" +
+                "}\n" +
+                "\n" +
+                "BostonCream().cook();\n" +
+                "// Prints:\n" +
+                "// Fry until golden brown.\n" +
+                "// Pipe full of custard and coat with chocolate.")
     }
 }
 

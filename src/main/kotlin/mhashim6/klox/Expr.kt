@@ -12,5 +12,6 @@ sealed class Expr {
     class Get(val loxObject: Expr, val name: Token) : Expr()
     class Set(val loxObject: Expr, val name: Token, val value: Expr) : Expr()
     class This(val keyword: Token) : Expr()
+    class Super(val keyword: Token, val method: Token) : Expr()
     object Empty : Expr()
 }

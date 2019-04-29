@@ -16,10 +16,9 @@ class LoxClass(val name: String, private val superclass: LoxClass?, private val 
     }
 
     fun findMethod(name: String): LoxFunction? {
-        return if (methods.containsKey(name)) {
+        return if (methods.containsKey(name))
             methods[name]
-        } else superclass?.findMethod(name)
-
+        else superclass?.findMethod(name)
     }
 
     override val arity: Int = findMethod("init")?.arity ?: 0
