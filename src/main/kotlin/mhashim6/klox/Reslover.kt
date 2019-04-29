@@ -32,7 +32,12 @@ fun resolve(statements: List<Stmt>, scopeType: ScopeType = ScopeType.NONE): Map<
             is Stmt.Class -> {
                 ResolverState.declare(it.name)
                 ResolverState.define(it.name)
+                it.superclass?.let { superClass ->
+                    if (superClass.name.lexeme == it.name.lexeme)
+                        ErrorLogs.log(ResolverError(it.name, "A class cannot inherit from itself."))
 
+                    resolveExpr(superClass, scopeType)
+                }
                 ResolverState.beginScope()
                 ResolverState.scopes.peek()["this"] = true
 

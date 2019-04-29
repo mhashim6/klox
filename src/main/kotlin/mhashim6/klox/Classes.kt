@@ -7,7 +7,7 @@ import mhashim6.klox.LoxError.RuntimeError
  *@author mhashim6 on 11/04/19
  */
 
-class LoxClass(val name: String, private val methods: MutableMap<String, LoxFunction>) : LoxCallable {
+class LoxClass(val name: String, private val superclass: LoxClass?, private val methods: MutableMap<String, LoxFunction>) : LoxCallable {
 
     override fun call(interpreter: Interpreter, args: List<Any?>): Any? {
         val instance = LoxObject(klass = this)
@@ -18,7 +18,7 @@ class LoxClass(val name: String, private val methods: MutableMap<String, LoxFunc
     fun findMethod(name: String): LoxFunction? {
         return if (methods.containsKey(name)) {
             methods[name]
-        } else null
+        } else superclass?.findMethod(name)
 
     }
 

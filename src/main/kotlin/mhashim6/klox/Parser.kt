@@ -52,11 +52,15 @@ private fun declaration(): Stmt = try {
 
 private fun classDeclaration(): Stmt {
     val name = consume(IDENTIFIER, "Expect class name.")
+
+    val superclass = if (match(LESS)) Expr.Variable(consume(IDENTIFIER, "Expect superclass name.")) else null
+
     consume(LEFT_BRACE, "Expect '{' before class body.")
     val functions = mutableListOf<Stmt.Fun>()
     while (!check(RIGHT_BRACE) && !isEOF) functions.add(funDeclaration())
     consume(RIGHT_BRACE, "Expect '}' after class body.")
-    return Stmt.Class(name, functions)
+
+    return Stmt.Class(name, superclass, functions)
 }
 
 private fun varDeclaration(): Stmt.Var {

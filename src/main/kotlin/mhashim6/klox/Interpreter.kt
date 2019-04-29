@@ -25,10 +25,14 @@ private fun execute(statements: List<Stmt>, environment: Environment) {
         when (it) {
             is Stmt.Var -> environment.define(it.name.lexeme, evaluate(it.initializer, environment))
             is Stmt.Class -> {
+                val superclass = (if (it.superclass != null)
+                    evaluate(it.superclass, environment) else null) as? LoxClass
+                        ?: throw RuntimeError(it.name.line, "Superclass must be a class.")
+
                 val methods = mutableMapOf<String, LoxFunction>().apply {
                     it.methods.forEach { method -> put(method.name.lexeme, LoxFunction(method, environment, isInit = method.name.lexeme == "init")) }
                 }
-                val loxClass = LoxClass(it.name.lexeme, methods)
+                val loxClass = LoxClass(it.name.lexeme, superclass, methods)
                 environment.define(it.name.lexeme, loxClass)
             }
             is Stmt.Fun -> {
