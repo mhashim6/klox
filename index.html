@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kotlin Compiler – KLox</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+    <link rel="stylesheet" href="github_solarized_light.css" type="text/css" />
+  </head>
+  <body>
+    <h1 id="klox">KLox</h1>
+    <p>
+      A Kotlin interpreter for The
+      <a href="https://www.craftinginterpreters.com/the-lox-language.html"
+        >Lox Programming Language</a
+      >.
+    </p>
+    <div class="centered">
+      <iframe src="https://www.youtube.com/embed/Xz248xzZAek"> </iframe>
+    </div>
+    <h2 id="overview">Overview</h2>
+    <p>
+      KLox is Tree-Walk Interpreter – Directly executes the resulting AST after
+      applying some semantic analysis – for the Lox Programming Language.
+    </p>
+    <h2 id="about-lox">About Lox</h2>
+    <p>
+      Lox is a High-Level, Object Oriented, Dynamic Scripting language with
+      Higher-Order Functions support, Designed by
+      <a href="https://twitter.com/munificentbob">Bob Nystrom</a>.
+    </p>
+    <h2 id="implementation-details">Implementation Details</h2>
+    <p>
+      KLox is immensly inspired by Nystorm's
+      <a href="craftinginterpreters.com">Crafting Interpreters</a> Java
+      Implementation. With the necessary improvements, simplicity, and
+      advantages that Kotlin, and Functioanl Programming provide.
+    </p>
+    <ul>
+      <li>
+        KLox utilizes a Recursive Descent Parser, which fits naturally with
+        Kotlin's FP Capabilities.
+      </li>
+      <li>
+        Pattern Matching was richly used, instead of the
+        <a href="https://en.wikipedia.org/wiki/Visitor_pattern"
+          >Visitor Pattern</a
+        >
+        implementation in Nystorm's Java version.
+      </li>
+      <li>
+        Scopes and the concept of <em>Blocks</em> is managed by an
+        <code>Environment</code> object.
+      </li>
+      <li>
+        The Standard Library contains essential functions like <code>time</code>
+      </li>
+      <li>
+        <code>print</code> is a special keyword with respect to language design.
+      </li>
+    </ul>
+    <h2 id="after-thoughts-and-comments">After thoughts and comments</h2>
+    <blockquote>
+      <p>
+        What makes this implementation different than other Kotlin
+        implementations <em>(aside from my messy git log)</em>, is that it
+        doesn't stick to the book in terms of design patterns; I tried to
+        embrace functional Kotlin in this project, yet (unfortunately) I've not
+        even come close to pure Functional Programming principles. The thing is,
+        having mutable global state floating around each pass in the compiler is
+        extremely inconvenient to maintain/debug.
+      </p>
+    </blockquote>
+    <blockquote>
+      <p>
+        In the <code>broken_immutable_state</code> branch you'll find my
+        <em>obviously-broken</em> attempt at immutable state with Kotlin's
+        implementation of
+        <a href="https://github.com/Kotlin/kotlinx.collections.immutable"
+          >persistent data structures</a
+        >. But without implicit parameters support it was really painful to
+        implement.
+      </p>
+    </blockquote>
+    <blockquote>
+      <p>
+        However, I didn't completely give up on FP with Kotlin; the Lexer,
+        Parser, Resolver, and Interpreter are all functions. Recursion and
+        pattern-matching <em>(as limited as kotlin's support for it)</em> are
+        heavily used, and I plan to refactor the entire project to render it as
+        functional as possible.
+      </p>
+    </blockquote>
+    <blockquote>
+      <p>
+        I did consider using <a href="(https://arrow-kt.io)">ΛRROW</a> , but so
+        far it feels to me like a language inside the language. Perhaps Kotlin
+        is not ready yet to be a pure functional language
+        <em>(on it's own)</em>?
+      </p>
+    </blockquote>
+    <hr />
+    <p>– <a href="http://mhashim6.me">Muhammad Hashim</a></p>
+  </body>
+</html>
